@@ -1,0 +1,17 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Debug Lama in Rhino 8 (net48)",
+			"type": "clr",
+			"request": "launch",
+			"program": "C:/Program Files/Rhino 8/System/Rhino.exe",
+			"args": [
+				"/nosplash",
+				"/netfx /runscript=\"_Grasshopper\"",
+			],
+			"cwd": "${workspaceFolder}",
+			"preLaunchTask": "build and deploy"
+		}
+	]
+}

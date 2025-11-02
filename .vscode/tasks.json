@@ -1,0 +1,72 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "restore",
+			"type": "process",
+			"command": "dotnet",
+			"args": ["restore", "Lama.csproj"],
+			"problemMatcher": ["$msCompile"]
+		},
+		{
+			"label": "ensure Rhino closed",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"Stop-Process -Name Rhino -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 250"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "build net48",
+			"type": "process",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"Lama.csproj",
+				"-c",
+				"Debug",
+				"-f",
+				"net48"
+			],
+			"dependsOn": ["ensure Rhino closed", "restore"],
+			"problemMatcher": ["$msCompile"]
+		},
+		{
+			"label": "copy to Grasshopper",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"$destFolder = \"$env:APPDATA\\Grasshopper\\Libraries\\Lama\"; if (!(Test-Path $destFolder)) { New-Item -ItemType Directory -Path $destFolder -Force | Out-Null }; Copy-Item -Path \".\\bin\\Debug\\net48\\Lama.gha\" -Destination \"$destFolder\\Lama.gha\" -Force; Write-Host \"Lama.gha copied to Grasshopper Libraries folder\""
+			],
+			"dependsOn": ["build net48"],
+			"problemMatcher": []
+		},
+		{
+			"label": "build and deploy",
+			"dependsOn": ["copy to Grasshopper"],
+			"problemMatcher": [],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "build net7.0-windows",
+			"type": "process",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"Lama.csproj",
+				"-c",
+				"Debug",
+				"-f",
+				"net7.0-windows"
+			],
+			"dependsOn": ["restore"],
+			"problemMatcher": ["$msCompile"]
+		}
+	]
+}

@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net48;net7.0-windows</TargetFrameworks>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Lama</AssemblyName>
+    <RootNamespace>Lama</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net48'">
+    <TargetExt>.gha</TargetExt>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RhinoCommon" Version="8.23.*" />
+    <PackageReference Include="Grasshopper" Version="8.23.*" />
+  </ItemGroup>
+
+  <!-- Launch Rhino for debugging from Visual Studio when debugging net48 -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' and '$(TargetFramework)' == 'net48'">
+    <StartAction>Program</StartAction>
+    <StartProgram>C:\Program Files\Rhino 8\System\Rhino.exe</StartProgram>
+    <StartArguments>/nosplash /netfx /runscript="_Grasshopper"</StartArguments>
+    <StartWorkingDirectory>$(MSBuildProjectDirectory)</StartWorkingDirectory>
+  </PropertyGroup>
+
+  <!-- Copy the built .gha to the Grasshopper Libraries folder (both Debug and Release) -->
+  <Target Name="PostBuild" AfterTargets="Build" Condition="'$(TargetFramework)' == 'net48'">
+    <PropertyGroup>
+      <GhLib>$(APPDATA)\Grasshopper\Libraries\Lama</GhLib>
+    </PropertyGroup>
+    <MakeDir Directories="$(GhLib)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GhLib)" />
+  </Target>
+</Project>
