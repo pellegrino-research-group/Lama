@@ -1,0 +1,11 @@
+name: Lama
+version: 0.0.1
+authors:
+- Lama
+description: Lama Grasshopper plugin for computational design
+url: https://github.com/pellegrino-research-group/Lama
+keywords:
+- grasshopper
+- plugin
+- lama
+icon: icon.png
