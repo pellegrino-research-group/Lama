@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <OutputType>Library</OutputType>
     <AssemblyName>Lama</AssemblyName>
     <RootNamespace>Lama</RootNamespace>
@@ -10,6 +10,8 @@
     <TargetExt>.gha</TargetExt>
     <!--  Enable building on non-Windows platforms -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <GrasshopperLibrariesDir Condition="'$(GrasshopperLibrariesDir)' == '' and '$(OS)' == 'Windows_NT'">$(APPDATA)\Grasshopper\Libraries</GrasshopperLibrariesDir>
+    <GrasshopperLibrariesDir Condition="'$(GrasshopperLibrariesDir)' == '' and '$(OS)' != 'Windows_NT'">$(HOME)/Library/Application Support/McNeel/Rhinoceros/MacPlugIns/Grasshopper/Libraries</GrasshopperLibrariesDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,5 +22,10 @@
   <ItemGroup>
     <EmbeddedResource Include="Lama.Grasshopper\Resources\Lama_24_24.png" />
   </ItemGroup>
+
+  <Target Name="CopyGhaToGrasshopperLibraries" AfterTargets="Build" Condition="'$(GrasshopperLibrariesDir)' != '' and Exists('$(GrasshopperLibrariesDir)')">
+    <Message Text="Copying $(TargetFileName) to $(GrasshopperLibrariesDir)" Importance="High" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GrasshopperLibrariesDir)" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

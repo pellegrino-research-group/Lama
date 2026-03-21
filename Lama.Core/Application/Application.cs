@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -138,8 +139,9 @@ namespace Lama.Core.Application
         /// <param name="executablePath">Path to CalculiX executable</param>
         /// <param name="inputFilePath">Path to input file (without extension)</param>
         /// <param name="workingDirectory">Working directory for the process</param>
+        /// <param name="numberOfCores">Number of cores for OpenMP (OMP_NUM_THREADS). If null, system/default behavior is used.</param>
         /// <returns>Exit code from CalculiX</returns>
-        public static int RunCalculix(string executablePath, string inputFilePath, string workingDirectory = null)
+        public static int RunCalculix(string executablePath, string inputFilePath, string workingDirectory = null, int? numberOfCores = null)
         {
             if (!ValidateExecutable(executablePath))
                 throw new FileNotFoundException($"CalculiX executable not found at: {executablePath}");
@@ -163,6 +165,14 @@ namespace Lama.Core.Application
                     RedirectStandardError = true
                 }
             };
+
+            if (numberOfCores.HasValue)
+            {
+                if (numberOfCores.Value < 1)
+                    throw new ArgumentOutOfRangeException(nameof(numberOfCores), "Number of cores must be at least 1.");
+
+                process.StartInfo.Environment["OMP_NUM_THREADS"] = numberOfCores.Value.ToString(CultureInfo.InvariantCulture);
+            }
 
             process.Start();
             process.WaitForExit();
