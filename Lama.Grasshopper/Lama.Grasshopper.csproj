@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Lama</AssemblyName>
+    <RootNamespace>Lama</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <TargetExt>.gha</TargetExt>
+    <!-- Enable building on non-Windows platforms -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <GrasshopperLibrariesDir Condition="'$(GrasshopperLibrariesDir)' == '' and '$(OS)' == 'Windows_NT'">$(APPDATA)\Grasshopper\Libraries</GrasshopperLibrariesDir>
+    <GrasshopperLibrariesDir Condition="'$(GrasshopperLibrariesDir)' == '' and '$(OS)' != 'Windows_NT'">$(HOME)/Library/Application Support/McNeel/Rhinoceros/MacPlugIns/Grasshopper/Libraries</GrasshopperLibrariesDir>
+    <GrasshopperLamaDir>$([System.IO.Path]::Combine('$(GrasshopperLibrariesDir)', 'Lama'))</GrasshopperLamaDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RhinoCommon" Version="8.23.*" />
+    <PackageReference Include="Grasshopper" Version="8.23.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lama.Core\Lama.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Lama_24_24.png" />
+  </ItemGroup>
+
+  <Target Name="CopyGhaToGrasshopperLibraries" AfterTargets="Build" Condition="'$(GrasshopperLibrariesDir)' != '' and Exists('$(GrasshopperLibrariesDir)')">
+    <MakeDir Directories="$(GrasshopperLamaDir)" Condition="!Exists('$(GrasshopperLamaDir)')" />
+    <Message Text="Copying $(TargetFileName) to $(GrasshopperLamaDir)" Importance="High" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GrasshopperLamaDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="CopyLamaDllsToGrasshopperLibraries" AfterTargets="Build" Condition="'$(GrasshopperLibrariesDir)' != '' and Exists('$(GrasshopperLibrariesDir)')">
+    <ItemGroup>
+      <LamaDllsToCopy Include="$(TargetDir)Lama*.dll" />
+    </ItemGroup>
+    <MakeDir Directories="$(GrasshopperLamaDir)" Condition="!Exists('$(GrasshopperLamaDir)')" />
+    <Message Text="Copying Lama DLLs to $(GrasshopperLamaDir): @(LamaDllsToCopy->'%(Filename)%(Extension)', ', ')" Importance="High" Condition="'@(LamaDllsToCopy)' != ''" />
+    <Copy SourceFiles="@(LamaDllsToCopy)" DestinationFolder="$(GrasshopperLamaDir)" SkipUnchangedFiles="true" Condition="'@(LamaDllsToCopy)' != ''" />
+  </Target>
+</Project>

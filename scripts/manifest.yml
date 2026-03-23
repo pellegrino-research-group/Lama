@@ -1,10 +1,13 @@
 name: Lama
 version: 0.0.1
 authors:
-- Lama
+- Marco Pellegrino
 description: Lama Grasshopper plugin for computational design
 url: https://github.com/pellegrino-research-group/Lama
 keywords:
 - grasshopper
 - plugin
+- lama
+- Alpaca4d
+- alpaca4d
 - lama

@@ -82,8 +82,8 @@ def clean_build():
     """Clean build artifacts."""
     print_step("Cleaning build artifacts...")
     
-    bin_path = Path("bin")
-    obj_path = Path("obj")
+    bin_path = Path("Lama.Grasshopper/bin")
+    obj_path = Path("Lama.Grasshopper/obj")
     
     if bin_path.exists():
         shutil.rmtree(bin_path)
@@ -97,7 +97,7 @@ def clean_build():
 def restore_packages():
     """Restore NuGet packages."""
     print_step("Restoring NuGet packages...")
-    success, output = run_command("dotnet restore Lama.csproj")
+    success, output = run_command("dotnet restore Lama.Grasshopper/Lama.Grasshopper.csproj")
     if not success:
         print_error(f"Failed to restore packages:\n{output}")
         return False
@@ -113,20 +113,20 @@ def build_plugin():
     if platform.system() == "Windows":
         target_framework = "net48"
         print_step(f"Building plugin (Release, {target_framework})...")
-        success, output = run_command(f"dotnet build Lama.csproj -c Release -f {target_framework}")
+        success, output = run_command(f"dotnet build Lama.Grasshopper/Lama.Grasshopper.csproj -c Release -f {target_framework}")
     else:
         # macOS/Linux: build for net8.0-windows (will run on Windows Rhino)
         target_framework = "net8.0-windows"
         print_step(f"Building plugin (Release, {target_framework})...")
         # Need to specify windows runtime identifier for cross-platform build
-        success, output = run_command(f"dotnet build Lama.csproj -c Release -f {target_framework}")
+        success, output = run_command(f"dotnet build Lama.Grasshopper/Lama.Grasshopper.csproj -c Release -f {target_framework}")
     
     if not success:
         print_error(f"Build failed:\n{output}")
         return False
     
     # Check if .gha file was created
-    gha_path = Path(f"bin/Release/{target_framework}/Lama.gha")
+    gha_path = Path(f"Lama.Grasshopper/bin/Release/{target_framework}/Lama.gha")
     if not gha_path.exists():
         print_error(f"Build succeeded but .gha file not found at {gha_path}")
         return False
@@ -181,7 +181,7 @@ def create_yak_package(version):
         target_framework = "net8.0-windows"
     
     # Copy .gha file
-    gha_source = Path(f"bin/Release/{target_framework}/Lama.gha")
+    gha_source = Path(f"Lama.Grasshopper/bin/Release/{target_framework}/Lama.gha")
     gha_dest = package_dir / "Lama.gha"
     shutil.copy2(gha_source, gha_dest)
     print_success(f"Copied {gha_source} to package")
@@ -303,7 +303,7 @@ def main():
         print_warning("Skipping build step")
         # Verify .gha exists
         target_framework = "net48" if platform.system() == "Windows" else "net8.0-windows"
-        gha_path = Path(f"bin/Release/{target_framework}/Lama.gha")
+        gha_path = Path(f"Lama.Grasshopper/bin/Release/{target_framework}/Lama.gha")
         if not gha_path.exists():
             print_error(f"Build artifact not found: {gha_path}")
             sys.exit(1)
