@@ -1,55 +1,137 @@
 using System;
 using System.Collections.Generic;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Types;
+using Lama.Grasshopper.Widgets;
 using Lama.Core.Model.Loads;
 using Lama.Core.Model.Steps;
 
 namespace Lama.Grasshopper.Components
 {
-    public class LinearStaticStepComponent : GH_Component
+    public class StaticStepComponent : GH_SwitcherComponent
     {
-        public LinearStaticStepComponent()
-            : base("LinearStaticStep", "Step", "Create a linear static analysis step.", "Lama", "Model")
+        public StaticStepComponent()
+            : base("StaticStep", "Step",
+                "Create a static analysis step (linear or nonlinear).",
+                "Lama", "Model")
         {
         }
 
+        protected override string DefaultEvaluationUnit => "Linear Static";
+
+        public override string UnitMenuName => "Step Type";
+
+        public override string UnitMenuHeader => "Select step type";
+
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
-            pManager.AddTextParameter("Name", "Name", "Step name.", GH_ParamAccess.item, "Step-1");
-            pManager.AddGenericParameter("Nodal Loads", "L", "Optional list of NodalLoad.", GH_ParamAccess.list);
-            pManager[1].Optional = true;
-            pManager.AddGenericParameter("Supports (WIP)", "Sup", "WIP: step-level supports are not shipped yet and are currently ignored.", GH_ParamAccess.list);
-            pManager[2].Optional = true;
-            pManager.AddGenericParameter("Output Requests", "O", "Optional list of StepOutputRequest.", GH_ParamAccess.list);
-            pManager[3].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Step", "S", "LinearStaticStep.", GH_ParamAccess.item);
         }
 
-        protected override void SolveInstance(IGH_DataAccess DA)
+        protected override void RegisterEvaluationUnits(EvaluationUnitManager mngr)
+        {
+            var linear = new EvaluationUnit(
+                "Linear Static",
+                "Linear Static",
+                "Linear static analysis step (*STEP / *STATIC).");
+            RegisterCommonInputs(linear);
+            RegisterCommonOutputs(linear);
+            mngr.RegisterUnit(linear);
+
+            var nonlinear = new EvaluationUnit(
+                "Nonlinear Static",
+                "Nonlinear Static",
+                "Geometrically nonlinear static step (*STEP,NLGEOM / *STATIC). " +
+                "Required for plasticity, large deformations, and buckling.");
+            RegisterCommonInputs(nonlinear);
+            nonlinear.RegisterInputParam(
+                new Param_Number(), "Time Period", "T",
+                "Total pseudo-time period.",
+                GH_ParamAccess.item, new GH_Number(1.0));
+            nonlinear.RegisterInputParam(
+                new Param_Number(), "Initial Increment", "dt0",
+                "Initial time increment.",
+                GH_ParamAccess.item, new GH_Number(0.1));
+            nonlinear.RegisterInputParam(
+                new Param_Number(), "Min Increment", "dtMin",
+                "Minimum allowed time increment.",
+                GH_ParamAccess.item, new GH_Number(1e-6));
+            nonlinear.RegisterInputParam(
+                new Param_Number(), "Max Increment", "dtMax",
+                "Maximum allowed time increment.",
+                GH_ParamAccess.item, new GH_Number(1.0));
+            RegisterCommonOutputs(nonlinear);
+            mngr.RegisterUnit(nonlinear);
+        }
+
+        private static void RegisterCommonInputs(EvaluationUnit unit)
+        {
+            unit.RegisterInputParam(
+                new Param_String(), "Name", "Name", "Step name.",
+                GH_ParamAccess.item, new GH_String("Step-1"));
+            unit.RegisterInputParam(
+                new Param_GenericObject(), "Nodal Loads", "L",
+                "Optional list of NodalLoad.",
+                GH_ParamAccess.list);
+            unit.RegisterInputParam(
+                new Param_GenericObject(), "Output Requests", "O",
+                "Optional list of StepOutputRequest.",
+                GH_ParamAccess.list);
+        }
+
+        private static void RegisterCommonOutputs(EvaluationUnit unit)
+        {
+            unit.RegisterOutputParam(
+                new Param_GenericObject(), "Step", "S", "Analysis step.");
+        }
+
+        protected override void SolveInstance(IGH_DataAccess DA, EvaluationUnit unit)
         {
             var name = "Step-1";
             var loadObjects = new List<object>();
-            var supportObjects = new List<object>();
             var outputObjects = new List<object>();
 
             DA.GetData(0, ref name);
             DA.GetDataList(1, loadObjects);
-            DA.GetDataList(2, supportObjects);
-            DA.GetDataList(3, outputObjects);
+            DA.GetDataList(2, outputObjects);
 
-            if (supportObjects.Count > 0)
+            AnalysisStepBase step;
+
+            switch (unit.Name)
             {
-                AddRuntimeMessage(
-                    GH_RuntimeMessageLevel.Warning,
-                    "Step-level supports are WIP and not shipped yet. This input is currently ignored; use StructuralModel supports for now.");
-            }
+                case "Linear Static":
+                {
+                    step = new LinearStaticStep(name);
+                    break;
+                }
+                case "Nonlinear Static":
+                {
+                    var timePeriod = 1.0;
+                    var dt0 = 0.1;
+                    var dtMin = 1e-6;
+                    var dtMax = 1.0;
+                    DA.GetData(3, ref timePeriod);
+                    DA.GetData(4, ref dt0);
+                    DA.GetData(5, ref dtMin);
+                    DA.GetData(6, ref dtMax);
 
-            var step = new LinearStaticStep(name);
+                    step = new NonlinearStaticStep(name)
+                    {
+                        TimePeriod = timePeriod,
+                        InitialIncrement = dt0,
+                        MinimumIncrement = dtMin,
+                        MaximumIncrement = dtMax
+                    };
+                    break;
+                }
+                default:
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Unknown step type.");
+                    return;
+            }
 
             foreach (var obj in loadObjects)
             {
@@ -59,13 +141,9 @@ namespace Lama.Grasshopper.Components
                     step.NodalLoads.Add(load);
                     continue;
                 }
-
                 if (obj != null)
-                {
-                    AddRuntimeMessage(
-                        GH_RuntimeMessageLevel.Warning,
-                        $"Unsupported nodal load input type '{input?.GetType().Name ?? obj.GetType().Name}'.");
-                }
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
+                        $"Unsupported nodal load type '{input?.GetType().Name ?? obj.GetType().Name}'.");
             }
 
             foreach (var obj in outputObjects)
@@ -76,13 +154,9 @@ namespace Lama.Grasshopper.Components
                     step.OutputRequests.Add(output);
                     continue;
                 }
-
                 if (obj != null)
-                {
-                    AddRuntimeMessage(
-                        GH_RuntimeMessageLevel.Warning,
-                        $"Unsupported output request input type '{input?.GetType().Name ?? obj.GetType().Name}'.");
-                }
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
+                        $"Unsupported output request type '{input?.GetType().Name ?? obj.GetType().Name}'.");
             }
 
             DA.SetData(0, step);

@@ -14,10 +14,10 @@ using Lama.Grasshopper.Definitions;
 
 namespace Lama.Grasshopper.Components
 {
-    public class StructuralModelComponent : GH_Component
+    public class CcxModel : GH_Component
     {
-        public StructuralModelComponent()
-            : base("StructuralModel", "Model", "Assemble a StructuralModel from element models, sections, supports, and steps.", "Lama", "Model")
+        public CcxModel()
+            : base("CcxModel", "CcxModel", "Assemble a CcxModel from element models, sections, supports, and steps.", "Lama", "Model")
         {
         }
 
@@ -42,7 +42,7 @@ namespace Lama.Grasshopper.Components
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            var name = "LamaModel";
+            var name = "Ccx_Lama_Model";
             var modelObjects = new List<object>();
             var sectionObjects = new List<object>();
             var supportObjects = new List<object>();

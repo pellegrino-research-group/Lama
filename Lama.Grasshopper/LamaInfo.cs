@@ -13,8 +13,8 @@ namespace Lama.Grasshopper
 		public override Bitmap Icon => LoadIcon();
 		public override string Description => "Lama Grasshopper plugin";
 		public override Guid Id => new Guid("c8a9b2f8-1b2f-4c5a-8a45-6c0a4b0b8c12");
-		public override string AuthorName => "Lama";
-		public override string AuthorContact => "";
+		public override string AuthorName => "Marco Pellegrino";
+		public override string AuthorContact => "lama.calculix@gmail.com";
 
 		private static Bitmap LoadIcon()
 		{

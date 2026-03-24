@@ -86,6 +86,7 @@ namespace Lama.Core.PostProcessing
                     AddTable(tables, currentHeaderLines, currentRows);
                     currentRows = null;
                     currentHeaderLines = null;
+                    headerWindow.Clear();
                 }
 
                 if (!string.IsNullOrWhiteSpace(rawLine))

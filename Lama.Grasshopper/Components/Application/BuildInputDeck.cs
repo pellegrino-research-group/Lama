@@ -18,16 +18,17 @@ namespace Lama.Grasshopper.Components
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Model", "M", "StructuralModel.", GH_ParamAccess.item);
-            pManager.AddTextParameter("Output Directory", "Dir", "Optional output directory for writing .inp.", GH_ParamAccess.item, string.Empty);
-            pManager[1].Optional = true;
-            pManager.AddTextParameter("Job Name", "Job", "Optional job name for file writing.", GH_ParamAccess.item, "job");
-            pManager[2].Optional = true;
+            pManager.AddTextParameter("Output Directory", "Dir",
+                "Output directory for the .inp file. " +
+                "If empty, uses the folder where the .gh file is saved (or a temp folder if unsaved).",
+                GH_ParamAccess.item, string.Empty);
+            pManager.AddTextParameter("Job Name", "Job", "Job name used for the .inp filename.", GH_ParamAccess.item, "Lama");
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
             pManager.AddTextParameter("Deck", "Inp", "Input deck text.", GH_ParamAccess.item);
-            pManager.AddTextParameter("Path", "Path", "Written .inp file path (if directory provided).", GH_ParamAccess.item);
+            pManager.AddTextParameter("Path", "Path", "Written .inp file path.", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -41,6 +42,9 @@ namespace Lama.Grasshopper.Components
             DA.GetData(1, ref outputDirectory);
             DA.GetData(2, ref jobName);
 
+            if (string.IsNullOrWhiteSpace(jobName))
+                jobName = "Lama";
+
             if (!TryUnwrapStructuralModel(modelObj, out var model))
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Model input must be a StructuralModel.");
@@ -49,9 +53,12 @@ namespace Lama.Grasshopper.Components
 
             if (model.Steps.Count == 0)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Model must contain at least one analysis step. Connect a step component (e.g., LinearStaticStep) to StructuralModel.");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Model must contain at least one analysis step. Connect a step component (e.g., StaticStep) to StructuralModel.");
                 return;
             }
+
+            if (string.IsNullOrWhiteSpace(outputDirectory))
+                outputDirectory = ResolveDefaultDirectory(jobName);
 
             try
             {
@@ -59,20 +66,26 @@ namespace Lama.Grasshopper.Components
                 var deck = builder.Build(model);
                 DA.SetData(0, deck);
 
-                if (!string.IsNullOrWhiteSpace(outputDirectory))
-                {
-                    var path = CalculixWorkflow.WriteInputDeck(model, outputDirectory, jobName);
-                    DA.SetData(1, path);
-                }
-                else
-                {
-                    DA.SetData(1, string.Empty);
-                }
+                var path = CalculixWorkflow.WriteInputDeck(model, outputDirectory, jobName);
+                DA.SetData(1, path);
             }
             catch (Exception ex)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ex.Message);
             }
+        }
+
+        private string ResolveDefaultDirectory(string jobName)
+        {
+            var ghFilePath = OnPingDocument()?.FilePath;
+            if (!string.IsNullOrWhiteSpace(ghFilePath))
+            {
+                var ghDir = Path.GetDirectoryName(ghFilePath);
+                if (!string.IsNullOrWhiteSpace(ghDir))
+                    return Path.Combine(ghDir, jobName);
+            }
+
+            return Path.Combine(Path.GetTempPath(), "Lama", jobName);
         }
 
         private static bool TryUnwrapStructuralModel(object input, out StructuralModel model)
