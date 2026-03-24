@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
@@ -98,6 +99,43 @@ namespace Lama.Grasshopper.Components
             );
             
             mngr.RegisterUnit(isotropic);
+
+            // Register Isotropic Hardening Material (elasto-plastic with isotropic hardening)
+            EvaluationUnit isoHardening = new EvaluationUnit(
+                "Isotropic Hardening",
+                "Isotropic Hardening",
+                "Elasto-plastic material with isotropic hardening (*PLASTIC). " +
+                "Provide yield stress vs. equivalent plastic strain pairs to define the hardening curve."
+            );
+            isoHardening.RegisterInputParam(
+                new Param_String(), "Name", "Name", "Material name",
+                GH_ParamAccess.item, new GH_String("MAT-PLASTIC"));
+            isoHardening.RegisterInputParam(
+                new Param_Colour(), "Color", "Color", "Material color",
+                GH_ParamAccess.item, new GH_Colour(Color.Gray));
+            isoHardening.RegisterInputParam(
+                new Param_Number(), "Density", "rho", "Density [kg/m³]",
+                GH_ParamAccess.item, new GH_Number(7850.0));
+            isoHardening.RegisterInputParam(
+                new Param_Number(), "Young's Modulus", "E", "Young's Modulus [Pa]",
+                GH_ParamAccess.item, new GH_Number(210e9));
+            isoHardening.RegisterInputParam(
+                new Param_Number(), "Poisson's Ratio", "nu", "Poisson's Ratio [-]",
+                GH_ParamAccess.item, new GH_Number(0.3));
+            isoHardening.RegisterInputParam(
+                new Param_Number(), "Yield Stress", "Sy",
+                "Yield stress values [Pa]. One per hardening curve point. " +
+                "E.g. {250e6, 400e6} for linear hardening.",
+                GH_ParamAccess.list);
+            isoHardening.RegisterInputParam(
+                new Param_Number(), "Plastic Strain", "Ep",
+                "Equivalent plastic strain values [-]. Must match Yield Stress list length. " +
+                "First value is typically 0. E.g. {0, 0.2}.",
+                GH_ParamAccess.list);
+            isoHardening.RegisterOutputParam(
+                new Param_GenericObject(), "Material", "M", "Material definition");
+
+            mngr.RegisterUnit(isoHardening);
 
             // Register Orthotropic Material
             EvaluationUnit orthotropic = new EvaluationUnit(
@@ -226,6 +264,48 @@ namespace Lama.Grasshopper.Components
                         YoungModulus = E,
                         PoissonRatio = nu
                     };
+                    material = m;
+                    break;
+                }
+                case "Isotropic Hardening":
+                {
+                    double E = 0.0;
+                    double nu = 0.0;
+                    var yieldStresses = new List<double>();
+                    var plasticStrains = new List<double>();
+
+                    DA.GetData(3, ref E);
+                    DA.GetData(4, ref nu);
+
+                    if (!DA.GetDataList(5, yieldStresses) || yieldStresses.Count == 0)
+                    {
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
+                            "At least one Yield Stress value is required.");
+                        return;
+                    }
+                    if (!DA.GetDataList(6, plasticStrains) || plasticStrains.Count == 0)
+                    {
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
+                            "At least one Plastic Strain value is required.");
+                        return;
+                    }
+                    if (yieldStresses.Count != plasticStrains.Count)
+                    {
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
+                            $"Yield Stress list ({yieldStresses.Count}) and Plastic Strain list ({plasticStrains.Count}) must have equal length.");
+                        return;
+                    }
+
+                    var m = new IsotropicMaterial(materialName)
+                    {
+                        Color = color,
+                        Density = density,
+                        YoungModulus = E,
+                        PoissonRatio = nu
+                    };
+                    for (int i = 0; i < yieldStresses.Count; i++)
+                        m.PlasticCurve.Add(new PlasticPoint(yieldStresses[i], plasticStrains[i]));
+
                     material = m;
                     break;
                 }

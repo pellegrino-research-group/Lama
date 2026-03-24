@@ -6,6 +6,7 @@ namespace Lama.Core.InputDeck
         public const string Node = "*NODE";
         public const string Element = "*ELEMENT";
         public const string Nset = "*NSET";
+        public const string Elset = "*ELSET";
         public const string Material = "*MATERIAL";
         public const string Elastic = "*ELASTIC";
         public const string Plastic = "*PLASTIC";

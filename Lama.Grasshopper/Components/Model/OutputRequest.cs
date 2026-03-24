@@ -17,7 +17,7 @@ namespace Lama.Grasshopper.Components
         {
             pManager.AddIntegerParameter("Type", "T", "0=NodeFile, 1=ElementFile, 2=NodePrint, 3=ElementPrint.", GH_ParamAccess.item, 0);
             pManager.AddTextParameter("Variables", "V", "Output variable tokens (e.g. U,RF,S,E).", GH_ParamAccess.list);
-            pManager.AddTextParameter("Target Set", "Set", "Optional NSET/ELSET name (used for print types).", GH_ParamAccess.item, string.Empty);
+            pManager.AddTextParameter("Target Set", "Set", "Optional NSET/ELSET name (for print types). Leave empty to use all nodes/elements.", GH_ParamAccess.item, string.Empty);
             pManager[2].Optional = true;
         }
 
@@ -30,7 +30,7 @@ namespace Lama.Grasshopper.Components
         {
             var typeValue = 0;
             var variables = new List<string>();
-            var targetSet = string.Empty;
+            var targetSet = "";
 
             if (!DA.GetData(0, ref typeValue))
                 return;

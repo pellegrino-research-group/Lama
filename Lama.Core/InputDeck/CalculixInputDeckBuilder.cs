@@ -28,9 +28,16 @@ namespace Lama.Core.InputDeck
 
             var builder = new StringBuilder();
 
+            var needsNall = NeedsAllNodesSet(model);
+            var needsEall = NeedsAllElementsSet(model);
+
             WriteHeading(builder, model);
             WriteNodes(builder, model);
             WriteElements(builder, model);
+            if (needsNall)
+                WriteAllNodesSet(builder, model);
+            if (needsEall)
+                WriteAllElementsSet(builder, model);
             WriteSupportsAsNodeSets(builder, model);
             WriteMaterials(builder, model);
             WriteSections(builder, model);
@@ -289,16 +296,43 @@ namespace Lama.Core.InputDeck
                 case StepOutputType.ElementFile:
                     return CalculixKeywords.ElementFile;
                 case StepOutputType.NodePrint:
-                    return string.IsNullOrWhiteSpace(request.TargetSetName)
-                        ? CalculixKeywords.NodePrint
-                        : $"{CalculixKeywords.NodePrint},NSET={request.TargetSetName}";
+                    var nset = string.IsNullOrWhiteSpace(request.TargetSetName) ? AllNodesSetName : request.TargetSetName;
+                    return $"{CalculixKeywords.NodePrint},NSET={nset}";
                 case StepOutputType.ElementPrint:
-                    return string.IsNullOrWhiteSpace(request.TargetSetName)
-                        ? CalculixKeywords.ElementPrint
-                        : $"{CalculixKeywords.ElementPrint},ELSET={request.TargetSetName}";
+                    var elset = string.IsNullOrWhiteSpace(request.TargetSetName) ? AllElementsSetName : request.TargetSetName;
+                    return $"{CalculixKeywords.ElementPrint},ELSET={elset}";
                 default:
                     throw new NotSupportedException($"Unsupported step output type '{request.OutputType}'.");
             }
+        }
+
+        private const string AllNodesSetName = "NALL";
+        private const string AllElementsSetName = "EALL";
+
+        private static bool NeedsAllNodesSet(StructuralModel model)
+        {
+            return model.Steps
+                .SelectMany(s => s.OutputRequests)
+                .Any(r => r.OutputType == StepOutputType.NodePrint && string.IsNullOrWhiteSpace(r.TargetSetName));
+        }
+
+        private static bool NeedsAllElementsSet(StructuralModel model)
+        {
+            return model.Steps
+                .SelectMany(s => s.OutputRequests)
+                .Any(r => r.OutputType == StepOutputType.ElementPrint && string.IsNullOrWhiteSpace(r.TargetSetName));
+        }
+
+        private static void WriteAllNodesSet(StringBuilder builder, StructuralModel model)
+        {
+            builder.AppendLine(FormattableString.Invariant($"{CalculixKeywords.Nset},NSET={AllNodesSetName}"));
+            WriteIntegerList(builder, model.Nodes.Select(n => n.Id).OrderBy(id => id));
+        }
+
+        private static void WriteAllElementsSet(StringBuilder builder, StructuralModel model)
+        {
+            builder.AppendLine(FormattableString.Invariant($"{CalculixKeywords.Elset},ELSET={AllElementsSetName}"));
+            WriteIntegerList(builder, model.Elements.Select(e => e.Id).OrderBy(id => id));
         }
 
         private static string SanitizeName(string value)
