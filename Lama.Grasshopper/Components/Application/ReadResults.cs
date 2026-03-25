@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Types;
 using Lama.Core.Model;
 using Lama.Core.PostProcessing;
@@ -11,7 +12,7 @@ using Rhino.Geometry;
 
 namespace Lama.Grasshopper.Components
 {
-    public class ReadResultsComponent : GH_ExtendableComponent
+    public class ReadResultsComponent : GH_SwitcherComponent
     {
         public ReadResultsComponent()
             : base("ReadResults", "ReadDat",
@@ -19,49 +20,60 @@ namespace Lama.Grasshopper.Components
         {
         }
 
+        protected override string DefaultEvaluationUnit => "ReadResults";
+
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
-            pManager.AddTextParameter("Dat Path", "Dat", "Path to the .dat file.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Model", "M", "StructuralModel used to map result IDs to positions.", GH_ParamAccess.item);
+            // Parameters are registered via EvaluationUnits.
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
-            pManager.AddTextParameter("Dat Path", "Path", "Resolved .dat file path.", GH_ParamAccess.item);
-
-            pManager.AddPointParameter("Node Positions", "P", "Node positions aligned with U.", GH_ParamAccess.list);
-            pManager.AddVectorParameter("Node Displacements", "U", "Nodal displacement vectors.", GH_ParamAccess.list);
-
-            pManager.AddPointParameter("Stress Positions", "Sp", "Element stress positions aligned with stress columns.", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Sxx", "Sxx", "Normal stress xx.", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Syy", "Syy", "Normal stress yy.", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Szz", "Szz", "Normal stress zz.", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Sxy", "Sxy", "Shear stress xy.", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Sxz", "Sxz", "Shear stress xz.", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Syz", "Syz", "Shear stress yz.", GH_ParamAccess.list);
-            pManager.AddNumberParameter("SvM", "SvM", "Von Mises stress.", GH_ParamAccess.list);
+            // Parameters are registered via EvaluationUnits.
         }
 
-        protected override void Setup(GH_ExtendableComponentAttributes attr)
+        protected override void RegisterEvaluationUnits(EvaluationUnitManager mngr)
         {
-            attr.MinWidth = 180f;
+            var unit = new EvaluationUnit("ReadResults", "ReadResults", "Read nodal and element results from DAT.");
+
+            unit.RegisterInputParam(new Param_String(), "Dat Path", "Dat", "Path to the .dat file.", GH_ParamAccess.item);
+            unit.RegisterInputParam(new Param_GenericObject(), "Model", "M", "StructuralModel used to map result IDs to positions.", GH_ParamAccess.item);
+
+            unit.RegisterOutputParam(new Param_String(), "Dat Path", "Path", "Resolved .dat file path.");
+            unit.RegisterOutputParam(new Param_Point(), "Node Positions", "P", "Node positions aligned with U.");
+            unit.RegisterOutputParam(new Param_Vector(), "Node Displacements", "U", "Nodal displacement vectors.");
+            unit.RegisterOutputParam(new Param_Point(), "Stress Positions", "Sp", "Element stress positions aligned with stress columns.");
+            unit.RegisterOutputParam(new Param_Number(), "Sxx", "Sxx", "Normal stress xx.");
+            unit.RegisterOutputParam(new Param_Number(), "Syy", "Syy", "Normal stress yy.");
+            unit.RegisterOutputParam(new Param_Number(), "Szz", "Szz", "Normal stress zz.");
+            unit.RegisterOutputParam(new Param_Number(), "Sxy", "Sxy", "Shear stress xy.");
+            unit.RegisterOutputParam(new Param_Number(), "Sxz", "Sxz", "Shear stress xz.");
+            unit.RegisterOutputParam(new Param_Number(), "Syz", "Syz", "Shear stress yz.");
+            unit.RegisterOutputParam(new Param_Number(), "SvM", "SvM", "Von Mises stress.");
 
             var nodalMenu = new GH_ExtendableMenu(0, "menu_nodal") { Name = "Nodal Results" };
-            var nodalPanel = new MenuPanel(0, "panel_nodal");
-            nodalPanel.AddControl(new MenuStaticText { Text = "Outputs: P, U" });
-            nodalMenu.AddControl(nodalPanel);
+            nodalMenu.RegisterOutputPlug(unit.Outputs[1]); // P
+            nodalMenu.RegisterOutputPlug(unit.Outputs[2]); // U
             nodalMenu.Collapse();
-            attr.AddMenu(nodalMenu);
+            unit.AddMenu(nodalMenu);
 
             var elementMenu = new GH_ExtendableMenu(1, "menu_element") { Name = "Element Results" };
-            var elementPanel = new MenuPanel(1, "panel_element");
-            elementPanel.AddControl(new MenuStaticText { Text = "Outputs: Sp, Sxx, Syy, Szz, Sxy, Sxz, Syz, SvM" });
-            elementMenu.AddControl(elementPanel);
+            elementMenu.RegisterOutputPlug(unit.Outputs[0]);  // Path
+            elementMenu.RegisterOutputPlug(unit.Outputs[3]);  // Sp
+            elementMenu.RegisterOutputPlug(unit.Outputs[4]);  // Sxx
+            elementMenu.RegisterOutputPlug(unit.Outputs[5]);  // Syy
+            elementMenu.RegisterOutputPlug(unit.Outputs[6]);  // Szz
+            elementMenu.RegisterOutputPlug(unit.Outputs[7]);  // Sxy
+            elementMenu.RegisterOutputPlug(unit.Outputs[8]);  // Sxz
+            elementMenu.RegisterOutputPlug(unit.Outputs[9]);  // Syz
+            elementMenu.RegisterOutputPlug(unit.Outputs[10]); // SvM
             elementMenu.Collapse();
-            attr.AddMenu(elementMenu);
+            unit.AddMenu(elementMenu);
+
+            mngr.RegisterUnit(unit);
         }
 
-        protected override void SolveInstance(IGH_DataAccess DA)
+        protected override void SolveInstance(IGH_DataAccess DA, EvaluationUnit unit)
         {
             var datPath = string.Empty;
             object modelObj = null;
@@ -307,7 +319,7 @@ namespace Lama.Grasshopper.Components
             return false;
         }
 
-        protected override System.Drawing.Bitmap Icon => null;
+        protected override System.Drawing.Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
         public override Guid ComponentGuid => new Guid("f1df9d50-39db-4f00-83ea-04f46f4d8a12");
     }
 }

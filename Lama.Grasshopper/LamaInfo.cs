@@ -1,7 +1,5 @@
 using System;
 using System.Drawing;
-using System.IO;
-using System.Reflection;
 using Grasshopper.Kernel;
 using Grasshopper;
 
@@ -18,23 +16,7 @@ namespace Lama.Grasshopper
 
 		private static Bitmap LoadIcon()
 		{
-			try
-			{
-				var assembly = Assembly.GetExecutingAssembly();
-				var resourceName = "Lama.Lama.Grasshopper.Resources.Lama_24_24.png";
-				using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-				{
-					if (stream != null)
-					{
-						return new Bitmap(stream);
-					}
-				}
-			}
-			catch
-			{
-				// Return null if icon cannot be loaded
-			}
-			return null;
+			return IconLoader.LoadDefaultIcon();
 		}
 	}
 
@@ -53,23 +35,7 @@ namespace Lama.Grasshopper
 
 		private static Bitmap LoadCategoryIcon()
 		{
-			try
-			{
-				var assembly = Assembly.GetExecutingAssembly();
-				var resourceName = "Lama.Lama.Grasshopper.Resources.Lama_24_24.png";
-				using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-				{
-					if (stream != null)
-					{
-						return new Bitmap(stream);
-					}
-				}
-			}
-			catch
-			{
-				// Return null if icon cannot be loaded
-			}
-			return null;
+			return IconLoader.LoadDefaultIcon();
 		}
 	}
 }

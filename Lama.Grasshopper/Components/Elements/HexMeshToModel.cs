@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.IO;
-using System.Reflection;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Types;
 using Lama.Core.Materials;
+using Lama.Grasshopper;
 using Lama.Grasshopper.Definitions;
 using Rhino.Geometry;
 
@@ -100,28 +99,7 @@ namespace Lama.Grasshopper.Components
             return false;
         }
 
-        protected override Bitmap Icon
-        {
-            get
-            {
-                try
-                {
-                    var assembly = Assembly.GetExecutingAssembly();
-                    var resourceName = "Lama.Lama.Grasshopper.Resources.Lama_24_24.png";
-                    using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-                    {
-                        if (stream != null)
-                            return new Bitmap(stream);
-                    }
-                }
-                catch
-                {
-                    // ignored
-                }
-
-                return null;
-            }
-        }
+        protected override Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
 
         public override Guid ComponentGuid => new Guid("2f590db4-1ccd-4df4-8f6d-c6f31948570c");
     }

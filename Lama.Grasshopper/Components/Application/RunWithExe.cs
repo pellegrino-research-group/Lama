@@ -1,8 +1,8 @@
 using System;
 using System.Drawing;
 using System.IO;
-using System.Reflection;
 using Grasshopper.Kernel;
+using Lama.Grasshopper;
 using Lama.Core.Application;
 
 namespace Lama.Grasshopper.Components
@@ -165,29 +165,7 @@ namespace Lama.Grasshopper.Components
 			}
 		}
 
-		protected override Bitmap Icon
-		{
-			get
-			{
-				try
-				{
-					var assembly = Assembly.GetExecutingAssembly();
-					var resourceName = "Lama.Lama.Grasshopper.Resources.Lama_24_24.png";
-					using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-					{
-						if (stream != null)
-						{
-							return new Bitmap(stream);
-						}
-					}
-				}
-				catch
-				{
-					// Return null if icon cannot be loaded
-				}
-				return null;
-			}
-		}
+		protected override Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
 
 		public override Guid ComponentGuid => new Guid("e5e3f4f9-9a6a-4c05-9da3-b5cc6b61a7a3");
 	}

@@ -240,7 +240,7 @@ namespace Lama.Grasshopper.Components
             return StepOutputRequest.ElementFileRaw(variables);
         }
 
-        protected override System.Drawing.Bitmap Icon => null;
+        protected override System.Drawing.Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
         public override Guid ComponentGuid => new Guid("bbcb7211-26bb-4d88-95dd-d2e53ad5ee57");
     }
 }
