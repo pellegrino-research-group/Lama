@@ -36,8 +36,7 @@ namespace Lama.Grasshopper.Components
         {
             var unit = new EvaluationUnit("ReadResults", "ReadResults", "Read nodal and element results from DAT.");
 
-            unit.RegisterInputParam(new Param_String(), "Dat Path", "Dat", "Path to the .dat file.", GH_ParamAccess.item);
-            unit.RegisterInputParam(new Param_GenericObject(), "Model", "M", "StructuralModel used to map result IDs to positions.", GH_ParamAccess.item);
+            unit.RegisterInputParam(new Param_GenericObject(), "Model", "M", "StructuralModel used to map result IDs to positions and resolve output file paths.", GH_ParamAccess.item);
 
             unit.RegisterOutputParam(new Param_String(), "Dat Path", "Path", "Resolved .dat file path.");
             unit.RegisterOutputParam(new Param_Point(), "Node Positions", "P", "Node positions aligned with U.");
@@ -75,31 +74,30 @@ namespace Lama.Grasshopper.Components
 
         protected override void SolveInstance(IGH_DataAccess DA, EvaluationUnit unit)
         {
-            var datPath = string.Empty;
             object modelObj = null;
-            if (!DA.GetData(0, ref datPath))
+            if (!DA.GetData(0, ref modelObj))
                 return;
-            if (!DA.GetData(1, ref modelObj))
-                return;
-
-            DA.SetData(0, datPath);
 
             var emptyPoints = new Point3d[0];
             var emptyVectors = new Vector3d[0];
             var emptyNumbers = new double[0];
 
-            if (string.IsNullOrWhiteSpace(datPath) || !File.Exists(datPath))
-            {
-                SetEmptyOutputs(DA, emptyPoints, emptyVectors, emptyNumbers);
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
-                    $"DAT file not found at '{datPath}'. Provide a valid .dat path.");
-                return;
-            }
-
             if (!TryUnwrapStructuralModel(modelObj, out var model))
             {
                 SetEmptyOutputs(DA, emptyPoints, emptyVectors, emptyNumbers);
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Model input must be a StructuralModel.");
+                return;
+            }
+
+            var datPath = ResolveDatPath(model);
+            DA.SetData(0, datPath);
+
+            if (string.IsNullOrWhiteSpace(datPath) || !File.Exists(datPath))
+            {
+                SetEmptyOutputs(DA, emptyPoints, emptyVectors, emptyNumbers);
+                AddRuntimeMessage(
+                    GH_RuntimeMessageLevel.Warning,
+                    $"DAT file not found at '{datPath}'. Ensure BuildInputDeck has been run and the model path is valid.");
                 return;
             }
 
@@ -317,6 +315,21 @@ namespace Lama.Grasshopper.Components
             }
 
             return false;
+        }
+
+        private static string ResolveDatPath(StructuralModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.Path))
+                return string.Empty;
+
+            var extension = Path.GetExtension(model.Path);
+            if (string.Equals(extension, ".dat", StringComparison.OrdinalIgnoreCase))
+                return model.Path;
+
+            if (string.Equals(extension, ".inp", StringComparison.OrdinalIgnoreCase))
+                return Path.ChangeExtension(model.Path, ".dat");
+
+            return model.Path + ".dat";
         }
 
         protected override System.Drawing.Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;

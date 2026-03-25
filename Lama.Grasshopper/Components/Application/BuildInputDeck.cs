@@ -28,7 +28,7 @@ namespace Lama.Grasshopper.Components
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
             pManager.AddTextParameter("Deck", "Inp", "Input deck text.", GH_ParamAccess.item);
-            pManager.AddTextParameter("Path", "Path", "Written .inp file path.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Model", "M", "StructuralModel with written .inp path.", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -66,8 +66,8 @@ namespace Lama.Grasshopper.Components
                 var deck = builder.Build(model);
                 DA.SetData(0, deck);
 
-                var path = CalculixWorkflow.WriteInputDeck(model, outputDirectory, jobName);
-                DA.SetData(1, path);
+                CalculixWorkflow.WriteInputDeck(model, outputDirectory, jobName);
+                DA.SetData(1, model);
             }
             catch (Exception ex)
             {

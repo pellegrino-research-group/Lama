@@ -58,6 +58,7 @@ namespace Lama.Test
                 var inpPath = CalculixWorkflow.WriteInputDeck(model, directory, "job");
 
                 Assert.True(File.Exists(inpPath));
+                Assert.Equal(inpPath, model.Path);
                 var content = File.ReadAllText(inpPath);
                 Assert.Contains("*HEADING", content);
                 Assert.Contains("LamaMinimalTetra", content);

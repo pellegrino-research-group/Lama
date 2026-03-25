@@ -15,6 +15,7 @@ namespace Lama.Core.Model
     public sealed class StructuralModel
     {
         public string Name { get; set; } = "LamaModel";
+        public string Path { get; set; } = string.Empty;
         public IList<Node> Nodes { get; } = new List<Node>();
         public IList<IElement> Elements { get; } = new List<IElement>();
         public IList<MaterialBase> Materials { get; } = new List<MaterialBase>();

@@ -2,6 +2,8 @@ using System;
 using System.Drawing;
 using System.IO;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Types;
+using Lama.Core.Model;
 using Lama.Grasshopper;
 using Lama.Core.Application;
 
@@ -13,7 +15,7 @@ namespace Lama.Grasshopper.Components
 			: base(
 				"RunWithExe",
 				"RunExe",
-				"Runs CalculiX with an input file. For CalculiX on Mac, specify the full path (e.g., /usr/local/bin/ccx or /opt/homebrew/bin/ccx)",
+				"Runs CalculiX using the input deck path attached to a StructuralModel. For CalculiX on Mac, specify the full path (e.g., /usr/local/bin/ccx or /opt/homebrew/bin/ccx)",
 				"Lama",
 				"Application")
 		{
@@ -21,7 +23,7 @@ namespace Lama.Grasshopper.Components
 
 		protected override void RegisterInputParams(GH_InputParamManager pManager)
 		{
-			pManager.AddTextParameter("File", "File", "Path to the input file (.inp)", GH_ParamAccess.item);
+			pManager.AddGenericParameter("Model", "M", "StructuralModel carrying the input deck path in Model.Path.", GH_ParamAccess.item);
 			pManager.AddTextParameter("Executable", "Exe", GetExecutableParamDescription(), GH_ParamAccess.item);
 			pManager[1].Optional = true;
 			pManager.AddIntegerParameter("Cores", "C", "Number of CPU cores (sets OMP_NUM_THREADS). Optional.", GH_ParamAccess.item);
@@ -52,25 +54,38 @@ namespace Lama.Grasshopper.Components
 
 		protected override void SolveInstance(IGH_DataAccess DA)
 		{
+			object modelObj = null;
 			string inputFilePath = string.Empty;
 			string exePath = string.Empty;
 			int numberOfCores = 0;
 
-			// Get input file path
-			if (!DA.GetData(0, ref inputFilePath))
+			// Get model input
+			if (!DA.GetData(0, ref modelObj))
 			{
 				DA.SetData(0, string.Empty);
 				DA.SetData(1, string.Empty);
-				AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Missing input file path");
+				AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Missing model input");
 				return;
 			}
+
+			if (!TryUnwrapStructuralModel(modelObj, out var model))
+			{
+				DA.SetData(0, string.Empty);
+				DA.SetData(1, string.Empty);
+				AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Model input must be a StructuralModel.");
+				return;
+			}
+
+			inputFilePath = ResolveInputDeckPath(model);
 
 			// Validate input file exists
 			if (!File.Exists(inputFilePath))
 			{
 				DA.SetData(0, string.Empty);
 				DA.SetData(1, string.Empty);
-				AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"Input file not found: {inputFilePath}");
+				AddRuntimeMessage(
+					GH_RuntimeMessageLevel.Error,
+					$"Input file not found: {inputFilePath}. Ensure BuildInputDeck has been run and model.Path points to an existing .inp.");
 				return;
 			}
 
@@ -163,6 +178,54 @@ namespace Lama.Grasshopper.Components
 				DA.SetData(1, string.Empty);
 				AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"Failed to run CalculiX: {ex.Message}");
 			}
+		}
+
+		private static string ResolveInputDeckPath(StructuralModel model)
+		{
+			if (model == null || string.IsNullOrWhiteSpace(model.Path))
+				return string.Empty;
+
+			var extension = Path.GetExtension(model.Path);
+			if (string.Equals(extension, ".inp", StringComparison.OrdinalIgnoreCase))
+				return model.Path;
+
+			if (string.Equals(extension, ".dat", StringComparison.OrdinalIgnoreCase))
+				return Path.ChangeExtension(model.Path, ".inp");
+
+			return model.Path + ".inp";
+		}
+
+		private static bool TryUnwrapStructuralModel(object input, out StructuralModel model)
+		{
+			model = input as StructuralModel;
+			if (model != null)
+				return true;
+
+			if (input is IGH_Goo goo)
+			{
+				var scriptValue = goo.ScriptVariable();
+				model = scriptValue as StructuralModel;
+				if (model != null)
+					return true;
+			}
+
+			var valueProp = input?.GetType().GetProperty("Value");
+			if (valueProp != null && valueProp.GetIndexParameters().Length == 0)
+			{
+				try
+				{
+					var value = valueProp.GetValue(input);
+					model = value as StructuralModel;
+					if (model != null)
+						return true;
+				}
+				catch
+				{
+					// ignored
+				}
+			}
+
+			return false;
 		}
 
 		protected override Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;

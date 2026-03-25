@@ -17,7 +17,7 @@ namespace Lama.Grasshopper.Components
     public class CcxModel : GH_Component
     {
         public CcxModel()
-            : base("CcxModel", "CcxModel", "Assemble a CcxModel from element models, sections, supports, and steps.", "Lama", "Model")
+            : base("CcxModel", "CcxModel", "Assemble a CcxModel from element models, supports, and steps.", "Lama", "Model")
         {
         }
 
@@ -26,13 +26,11 @@ namespace Lama.Grasshopper.Components
             pManager.AddTextParameter("Name", "Name", "Model name.", GH_ParamAccess.item, "LamaModel");
             pManager.AddGenericParameter("Element Inputs", "EI", "List of element inputs (StructuralModel fragments and/or HexMesh definitions).", GH_ParamAccess.list);
             pManager[1].Optional = true;
-            pManager.AddGenericParameter("Sections", "Sec", "SectionBase list.", GH_ParamAccess.list);
-            pManager[2].Optional = true;
             pManager.AddGenericParameter("Supports", "Sup", "FixedSupport list.", GH_ParamAccess.list);
-            pManager[3].Optional = true;
+            pManager[2].Optional = true;
             pManager.AddGenericParameter("Steps", "Step", "AnalysisStepBase list.", GH_ParamAccess.list);
-            pManager[4].Optional = true;
-            pManager.AddNumberParameter("Merge Tolerance", "Tol", "Node merge tolerance across element models.", GH_ParamAccess.item, 1e-6);
+            pManager[3].Optional = true;
+            pManager.AddNumberParameter("Tolerance", "Tol", "Node merge tolerance across element models.", GH_ParamAccess.item, 1e-6);
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
@@ -44,17 +42,15 @@ namespace Lama.Grasshopper.Components
         {
             var name = "Ccx_Lama_Model";
             var modelObjects = new List<object>();
-            var sectionObjects = new List<object>();
             var supportObjects = new List<object>();
             var stepObjects = new List<object>();
             var tol = 1e-6;
 
             DA.GetData(0, ref name);
             DA.GetDataList(1, modelObjects);
-            DA.GetDataList(2, sectionObjects);
-            DA.GetDataList(3, supportObjects);
-            DA.GetDataList(4, stepObjects);
-            DA.GetData(5, ref tol);
+            DA.GetDataList(2, supportObjects);
+            DA.GetDataList(3, stepObjects);
+            DA.GetData(4, ref tol);
 
             var model = new StructuralModel { Name = name };
 
@@ -62,8 +58,7 @@ namespace Lama.Grasshopper.Components
             var sourceModels = BuildSourceModels(modelObjects, inferredSections, tol);
             MergeSourceModels(model, sourceModels, tol);
 
-            var explicitSections = ExtractInputs<SectionBase>(sectionObjects, "section");
-            var sections = MergeSections(inferredSections, explicitSections);
+            var sections = MergeSections(inferredSections);
             foreach (var section in sections)
                 model.Sections.Add(section);
 
@@ -234,15 +229,12 @@ namespace Lama.Grasshopper.Components
             }
         }
 
-        private List<SectionBase> MergeSections(IEnumerable<SectionBase> inferredSections, IEnumerable<SectionBase> explicitSections)
+        private List<SectionBase> MergeSections(IEnumerable<SectionBase> inferredSections)
         {
-            // Key by ELSET so explicit section inputs can override inferred ones from HexMesh materials.
+            // Key by ELSET so section sources remain unique after combining model fragments.
             var merged = new Dictionary<string, SectionBase>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var section in inferredSections.Where(s => s != null))
-                merged[section.ElementSetName] = section;
-
-            foreach (var section in explicitSections.Where(s => s != null))
                 merged[section.ElementSetName] = section;
 
             return merged.Values.ToList();

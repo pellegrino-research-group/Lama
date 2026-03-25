@@ -41,6 +41,7 @@ namespace Lama.Core.Application
             var inputPath = Path.Combine(outputDirectory, $"{jobName}.inp");
             var builder = new CalculixInputDeckBuilder();
             builder.WriteToFile(model, inputPath);
+            model.Path = inputPath;
 
             return inputPath;
         }
