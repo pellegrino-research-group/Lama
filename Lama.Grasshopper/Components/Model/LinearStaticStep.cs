@@ -16,6 +16,7 @@ namespace Lama.Grasshopper.Components
                 "Create a static analysis step (linear or nonlinear).",
                 "Lama", "Model")
         {
+            Message = Name + "\nLama";
         }
 
         protected override string DefaultEvaluationUnit => "Linear Static";
@@ -74,13 +75,23 @@ namespace Lama.Grasshopper.Components
                 new Param_String(), "Name", "Name", "Step name.",
                 GH_ParamAccess.item, new GH_String("Step-1"));
             unit.RegisterInputParam(
-                new Param_GenericObject(), "Nodal Loads", "L",
+                new Param_GenericObject { Optional = true }, "Nodal Loads", "L",
                 "Optional list of NodalLoad.",
                 GH_ParamAccess.list);
             unit.RegisterInputParam(
-                new Param_GenericObject(), "Output Requests", "O",
-                "Optional list of StepOutputRequest.",
+                new Param_GenericObject { Optional = true }, "Gravity Load", "G",
+                "Optional GravityLoad (*DLOAD, GRAV).",
+                GH_ParamAccess.item);
+            unit.RegisterInputParam(
+                new Param_GenericObject { Optional = true }, "Output Requests", "O",
+                "Optional list of StepOutputRequest. " +
+                "If empty, defaults to printing all nodal (U, RF, V, A) and element (S, E, PE, PEEQ, ENER, SDV) variables to .dat.",
                 GH_ParamAccess.list);
+            unit.RegisterInputParam(
+                new Param_Boolean(), "Propagate Loads", "Prop",
+                "When true (default), loads from previous steps carry over (OP=MOD). " +
+                "When false, previous loads are cleared and only this step's loads apply (OP=NEW).",
+                GH_ParamAccess.item, new GH_Boolean(true));
         }
 
         private static void RegisterCommonOutputs(EvaluationUnit unit)
@@ -93,11 +104,15 @@ namespace Lama.Grasshopper.Components
         {
             var name = "Step-1";
             var loadObjects = new List<object>();
+            object gravityObj = null;
             var outputObjects = new List<object>();
+            var propagateLoads = true;
 
             DA.GetData(0, ref name);
             DA.GetDataList(1, loadObjects);
-            DA.GetDataList(2, outputObjects);
+            DA.GetData(2, ref gravityObj);
+            DA.GetDataList(3, outputObjects);
+            DA.GetData(4, ref propagateLoads);
 
             AnalysisStepBase step;
 
@@ -114,10 +129,10 @@ namespace Lama.Grasshopper.Components
                     var dt0 = 0.1;
                     var dtMin = 1e-6;
                     var dtMax = 1.0;
-                    DA.GetData(3, ref timePeriod);
-                    DA.GetData(4, ref dt0);
-                    DA.GetData(5, ref dtMin);
-                    DA.GetData(6, ref dtMax);
+                    DA.GetData(5, ref timePeriod);
+                    DA.GetData(6, ref dt0);
+                    DA.GetData(7, ref dtMin);
+                    DA.GetData(8, ref dtMax);
 
                     step = new NonlinearStaticStep(name)
                     {
@@ -146,6 +161,16 @@ namespace Lama.Grasshopper.Components
                         $"Unsupported nodal load type '{input?.GetType().Name ?? obj.GetType().Name}'.");
             }
 
+            if (gravityObj != null)
+            {
+                var unwrapped = UnwrapInput(gravityObj);
+                if (unwrapped is GravityLoad gravity)
+                    step.GravityLoad = gravity;
+                else
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
+                        $"Unsupported gravity load type '{unwrapped?.GetType().Name ?? gravityObj.GetType().Name}'.");
+            }
+
             foreach (var obj in outputObjects)
             {
                 var input = UnwrapInput(obj);
@@ -159,6 +184,13 @@ namespace Lama.Grasshopper.Components
                         $"Unsupported output request type '{input?.GetType().Name ?? obj.GetType().Name}'.");
             }
 
+            if (step.OutputRequests.Count == 0)
+            {
+                step.OutputRequests.Add(StepOutputRequest.NodePrintRaw("U", "RF", "V", "A"));
+                step.OutputRequests.Add(StepOutputRequest.ElementPrintRaw("S", "E", "PE", "PEEQ", "ENER", "SDV"));
+            }
+
+            step.PropagateLoads = propagateLoads;
             DA.SetData(0, step);
         }
 

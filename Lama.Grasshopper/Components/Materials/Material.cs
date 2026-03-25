@@ -20,6 +20,7 @@ namespace Lama.Grasshopper.Components
                 "Lama",
                 "Materials")
         {
+            Message = Name + "\nLama";
         }
 
         protected override string DefaultEvaluationUnit => "Isotropic";

@@ -140,7 +140,8 @@ namespace Lama.Test
             model.Materials.Add(mat);
             model.Sections.Add(new SolidSection("E_SOLID", mat));
 
-            model.FixedSupports.Add(new FixedSupport("FIX", new[] { 1, 2, 3 }, true, false));
+            model.FixedSupports.Add(new FixedSupport("FIX", new[] { 1, 2, 3 },
+                fixUx: true, fixUy: true, fixUz: true, fixRx: false, fixRy: false, fixRz: false));
 
             var step = new LinearStaticStep("Step-1");
             step.NodalLoads.Add(new NodalLoad(4, StructuralDof.Uz, -1000));

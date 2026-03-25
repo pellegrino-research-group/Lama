@@ -173,8 +173,12 @@ namespace Lama.Test
             model.FixedSupports.Add(new FixedSupport(
                 name: "ROOT_FIX",
                 nodeIds: new[] { 1, 4, 5, 8, 12, 16, 17, 20 },
-                fixTranslations: true,
-                fixRotations: false));
+                fixUx: true,
+                fixUy: true,
+                fixUz: true,
+                fixRx: false,
+                fixRy: false,
+                fixRz: false));
 
             var step = new LinearStaticStep("Step-1");
             step.NodalLoads.Add(new NodalLoad(nodeId: 2, dof: StructuralDof.Uz, value: -1000.0));

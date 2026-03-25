@@ -8,11 +8,11 @@ using Rhino.Geometry;
 namespace Lama.Grasshopper.Definitions
 {
     /// <summary>
-    /// Container for Rhino hexahedral meshes and conversion options.
+    /// Container for Rhino tetrahedral meshes (4 corners) converted to C3D10 elements.
     /// </summary>
-    public sealed class HexMeshDefinition
+    public sealed class TetraMeshDefinition
     {
-        public HexMeshDefinition(
+        public TetraMeshDefinition(
             IEnumerable<Mesh> meshes,
             string elementSetName,
             MaterialBase material = null,
@@ -34,11 +34,8 @@ namespace Lama.Grasshopper.Definitions
         }
 
         public IReadOnlyList<Mesh> Meshes { get; }
-
         public string ElementSetName { get; }
-
         public MaterialBase Material { get; }
-
         public SectionOrientation Orientation { get; }
     }
 }

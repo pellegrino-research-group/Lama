@@ -2,7 +2,7 @@ name: Lama
 version: 0.0.1
 authors:
 - Marco Pellegrino
-description: Lama Grasshopper plugin for computational design
+description: Grasshopper plugin that wraps CalculiX, an open-source finite element solver, for structural analysis inside Rhino.
 url: https://github.com/pellegrino-research-group/Lama
 keywords:
 - grasshopper
@@ -10,4 +10,9 @@ keywords:
 - lama
 - Alpaca4d
 - alpaca4d
-- lama
+- Lama
+- calculix
+- Calculix
+- fea
+- finite element
+- fem

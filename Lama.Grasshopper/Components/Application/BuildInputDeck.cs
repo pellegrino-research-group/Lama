@@ -13,6 +13,7 @@ namespace Lama.Grasshopper.Components
         public BuildInputDeckComponent()
             : base("BuildInputDeck", "BuildInp", "Build and optionally write a CalculiX input deck from StructuralModel.", "Lama", "Application")
         {
+            Message = Name + "\nLama";
         }
 
         protected override void RegisterInputParams(GH_InputParamManager pManager)
@@ -27,8 +28,8 @@ namespace Lama.Grasshopper.Components
 
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
-            pManager.AddTextParameter("Deck", "Inp", "Input deck text.", GH_ParamAccess.item);
             pManager.AddGenericParameter("Model", "M", "StructuralModel with written .inp path.", GH_ParamAccess.item);
+            pManager.AddTextParameter("Input Deck", "Inp", "Input deck text.", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -64,10 +65,10 @@ namespace Lama.Grasshopper.Components
             {
                 var builder = new CalculixInputDeckBuilder();
                 var deck = builder.Build(model);
-                DA.SetData(0, deck);
 
                 CalculixWorkflow.WriteInputDeck(model, outputDirectory, jobName);
-                DA.SetData(1, model);
+                DA.SetData(0, model);
+                DA.SetData(1, deck);
             }
             catch (Exception ex)
             {

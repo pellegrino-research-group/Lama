@@ -19,12 +19,13 @@ namespace Lama.Grasshopper.Components
         public CcxModel()
             : base("CcxModel", "CcxModel", "Assemble a CcxModel from element models, supports, and steps.", "Lama", "Model")
         {
+            Message = Name + "\nLama";
         }
 
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
             pManager.AddTextParameter("Name", "Name", "Model name.", GH_ParamAccess.item, "LamaModel");
-            pManager.AddGenericParameter("Element Inputs", "EI", "List of element inputs (StructuralModel fragments and/or HexMesh definitions).", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Element Inputs", "EI", "List of element inputs (StructuralModel fragments, HexMesh definitions, and/or TetraMesh definitions).", GH_ParamAccess.list);
             pManager[1].Optional = true;
             pManager.AddGenericParameter("Supports", "Sup", "FixedSupport list.", GH_ParamAccess.list);
             pManager[2].Optional = true;
@@ -166,7 +167,22 @@ namespace Lama.Grasshopper.Components
                     sources.Add(converted);
 
                     if (hexMesh.Material != null)
-                        inferredSections.Add(new SolidSection(hexMesh.ElementSetName, hexMesh.Material));
+                        inferredSections.Add(new SolidSection(hexMesh.ElementSetName, hexMesh.Material, hexMesh.Orientation));
+
+                    continue;
+                }
+
+                if (input is TetraMeshDefinition tetraMesh)
+                {
+                    var converted = RhinoTetraMeshToLamaConverter.CreateModelFromTetraMeshes(
+                        tetraMesh.Meshes,
+                        tolerance,
+                        modelName: "TetraMeshFragment",
+                        elementSetName: tetraMesh.ElementSetName);
+                    sources.Add(converted);
+
+                    if (tetraMesh.Material != null)
+                        inferredSections.Add(new SolidSection(tetraMesh.ElementSetName, tetraMesh.Material, tetraMesh.Orientation));
 
                     continue;
                 }

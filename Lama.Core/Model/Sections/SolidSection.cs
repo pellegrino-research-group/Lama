@@ -7,9 +7,12 @@ namespace Lama.Core.Model.Sections
     /// </summary>
     public sealed class SolidSection : SectionBase
     {
-        public SolidSection(string elementSetName, MaterialBase material)
+        public SectionOrientation Orientation { get; }
+
+        public SolidSection(string elementSetName, MaterialBase material, SectionOrientation orientation = null)
             : base(elementSetName, material)
         {
+            Orientation = orientation;
         }
     }
 }

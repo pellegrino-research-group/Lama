@@ -19,6 +19,7 @@ namespace Lama.Grasshopper.Components
 				"Lama",
 				"Application")
 		{
+			Message = Name + "\nLama";
 		}
 
 		protected override void RegisterInputParams(GH_InputParamManager pManager)

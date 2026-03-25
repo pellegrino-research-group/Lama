@@ -147,22 +147,56 @@ namespace Lama.Core.InputDeck
 
         private static void WriteMaterials(StringBuilder builder, StructuralModel model)
         {
-            foreach (var material in model.Materials.OfType<IsotropicMaterial>())
+            foreach (var material in model.Materials)
             {
-                builder.AppendLine(FormattableString.Invariant($"{CalculixKeywords.Material},NAME={material.Name}"));
-                builder.AppendLine(CalculixKeywords.Elastic);
-                builder.AppendLine(FormattableString.Invariant($"{material.YoungModulus},{material.PoissonRatio}"));
-
-                if (!material.HasPlasticity)
-                    continue;
-
-                builder.AppendLine(CalculixKeywords.Plastic);
-                foreach (var point in material.PlasticCurve)
+                switch (material)
                 {
-                    builder.AppendLine(FormattableString.Invariant(
-                        $"{point.YieldStress},{point.EquivalentPlasticStrain}"));
+                    case IsotropicMaterial isotropic:
+                        WriteIsotropicMaterial(builder, isotropic);
+                        break;
+                    case OrthotropicMaterial orthotropic:
+                        WriteOrthotropicMaterial(builder, orthotropic);
+                        break;
+                    case SpringMaterial spring:
+                        throw new NotSupportedException(
+                            $"Material '{spring.Name}' is SpringMaterial, but spring export cards are not implemented yet.");
+                    case StiffnessMatrixMaterial stiffness:
+                        throw new NotSupportedException(
+                            $"Material '{stiffness.Name}' is StiffnessMatrixMaterial, but stiffness-matrix export cards are not implemented yet.");
+                    default:
+                        throw new NotSupportedException(
+                            $"Unsupported material type '{material.GetType().Name}'.");
                 }
             }
+        }
+
+        private static void WriteIsotropicMaterial(StringBuilder builder, IsotropicMaterial material)
+        {
+            builder.AppendLine(FormattableString.Invariant($"{CalculixKeywords.Material},NAME={material.Name}"));
+            builder.AppendLine(CalculixKeywords.Elastic);
+            builder.AppendLine(FormattableString.Invariant($"{material.YoungModulus},{material.PoissonRatio}"));
+            builder.AppendLine(CalculixKeywords.Density);
+            builder.AppendLine(FormattableString.Invariant($"{material.Density}"));
+
+            if (!material.HasPlasticity)
+                return;
+
+            builder.AppendLine(CalculixKeywords.Plastic);
+            foreach (var point in material.PlasticCurve)
+            {
+                builder.AppendLine(FormattableString.Invariant(
+                    $"{point.YieldStress},{point.EquivalentPlasticStrain}"));
+            }
+        }
+
+        private static void WriteOrthotropicMaterial(StringBuilder builder, OrthotropicMaterial material)
+        {
+            builder.AppendLine(FormattableString.Invariant($"{CalculixKeywords.Material},NAME={material.Name}"));
+            builder.AppendLine(CalculixKeywords.ElasticEngineering);
+            builder.AppendLine(FormattableString.Invariant(
+                $"{material.E1},{material.E2},{material.E3},{material.Nu12},{material.Nu13},{material.Nu23},{material.G12},{material.G13},{material.G23}"));
+            builder.AppendLine(CalculixKeywords.Density);
+            builder.AppendLine(FormattableString.Invariant($"{material.Density}"));
         }
 
         private static void WriteSections(StringBuilder builder, StructuralModel model)
@@ -187,6 +221,18 @@ namespace Lama.Core.InputDeck
 
         private static void WriteSolidSection(StringBuilder builder, SolidSection section)
         {
+            if (section.Orientation != null)
+            {
+                var orientationName = $"ORI_{SanitizeName(section.ElementSetName)}";
+                builder.AppendLine(FormattableString.Invariant(
+                    $"{CalculixKeywords.Orientation},NAME={orientationName}"));
+                builder.AppendLine(FormattableString.Invariant(
+                    $"{section.Orientation.Axis1X},{section.Orientation.Axis1Y},{section.Orientation.Axis1Z},{section.Orientation.Axis2X},{section.Orientation.Axis2Y},{section.Orientation.Axis2Z}"));
+                builder.AppendLine(FormattableString.Invariant(
+                    $"{CalculixKeywords.SolidSection},ELSET={section.ElementSetName},MATERIAL={section.Material.Name},ORIENTATION={orientationName}"));
+                return;
+            }
+
             builder.AppendLine(FormattableString.Invariant(
                 $"{CalculixKeywords.SolidSection},ELSET={section.ElementSetName},MATERIAL={section.Material.Name}"));
         }
@@ -210,11 +256,34 @@ namespace Lama.Core.InputDeck
             foreach (var support in model.FixedSupports)
             {
                 var setName = _supportSetNameMap[support];
-                if (support.FixTranslations)
-                    builder.AppendLine($"{setName},1,3");
-                if (support.FixRotations)
-                    builder.AppendLine($"{setName},4,6");
+                WriteFixedSupportDofs(builder, setName, support);
             }
+        }
+
+        private static void WriteFixedSupportDofs(StringBuilder builder, string setName, FixedSupport support)
+        {
+            int? rangeStart = null;
+            for (var d = 1; d <= 6; d++)
+            {
+                var fix = support.IsDofFixed(d);
+                if (fix)
+                {
+                    if (!rangeStart.HasValue)
+                        rangeStart = d;
+                }
+                else
+                {
+                    if (rangeStart.HasValue)
+                    {
+                        var from = rangeStart.Value;
+                        builder.AppendLine(FormattableString.Invariant($"{setName},{from},{d - 1}"));
+                        rangeStart = null;
+                    }
+                }
+            }
+
+            if (rangeStart.HasValue)
+                builder.AppendLine(FormattableString.Invariant($"{setName},{rangeStart.Value},6"));
         }
 
         private static void WriteSteps(StringBuilder builder, StructuralModel model)
@@ -230,7 +299,8 @@ namespace Lama.Core.InputDeck
             var stepHeader = step is NonlinearStaticStep ? $"{CalculixKeywords.Step},NLGEOM" : CalculixKeywords.Step;
             builder.AppendLine(stepHeader);
             WriteProcedure(builder, step);
-            WriteStepLoads(builder, step.NodalLoads);
+            WriteStepLoads(builder, step.NodalLoads, step.PropagateLoads);
+            WriteStepGravityLoad(builder, step.GravityLoad, step.PropagateLoads);
             WriteStepOutputs(builder, step.OutputRequests);
             builder.AppendLine(CalculixKeywords.EndStep);
         }
@@ -261,17 +331,30 @@ namespace Lama.Core.InputDeck
             }
         }
 
-        private static void WriteStepLoads(StringBuilder builder, IEnumerable<NodalLoad> loads)
+        private static void WriteStepLoads(StringBuilder builder, IEnumerable<NodalLoad> loads, bool propagate)
         {
             var loadList = loads.ToList();
             if (loadList.Count == 0)
                 return;
 
-            builder.AppendLine(CalculixKeywords.Cload);
+            var keyword = propagate ? CalculixKeywords.Cload : $"{CalculixKeywords.Cload},OP=NEW";
+            builder.AppendLine(keyword);
             foreach (var load in loadList)
             {
                 builder.AppendLine(FormattableString.Invariant($"{load.NodeId},{(int)load.Dof},{load.Value}"));
             }
+        }
+
+        private static void WriteStepGravityLoad(StringBuilder builder, GravityLoad g, bool propagate)
+        {
+            if (g == null)
+                return;
+
+            var set = string.IsNullOrWhiteSpace(g.ElementSetName) ? AllElementsSetName : g.ElementSetName;
+            var keyword = propagate ? CalculixKeywords.Dload : $"{CalculixKeywords.Dload},OP=NEW";
+            builder.AppendLine(keyword);
+            builder.AppendLine(FormattableString.Invariant(
+                $"{set},GRAV,{g.Magnitude},{g.DirectionX},{g.DirectionY},{g.DirectionZ}"));
         }
 
         private static void WriteStepOutputs(StringBuilder builder, IEnumerable<StepOutputRequest> outputRequests)
@@ -318,9 +401,15 @@ namespace Lama.Core.InputDeck
 
         private static bool NeedsAllElementsSet(StructuralModel model)
         {
-            return model.Steps
+            var needsForOutput = model.Steps
                 .SelectMany(s => s.OutputRequests)
                 .Any(r => r.OutputType == StepOutputType.ElementPrint && string.IsNullOrWhiteSpace(r.TargetSetName));
+
+            var needsForGravity = model.Steps
+                .Where(s => s.GravityLoad != null)
+                .Any(s => string.IsNullOrWhiteSpace(s.GravityLoad.ElementSetName));
+
+            return needsForOutput || needsForGravity;
         }
 
         private static void WriteAllNodesSet(StringBuilder builder, StructuralModel model)

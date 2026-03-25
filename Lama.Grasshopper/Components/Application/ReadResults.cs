@@ -16,8 +16,9 @@ namespace Lama.Grasshopper.Components
     {
         public ReadResultsComponent()
             : base("ReadResults", "ReadDat",
-                "Read nodal and element results from a CalculiX .dat file.", "Lama", "Application")
+                "Read nodal results (U, RF force/moment) and element stresses from a CalculiX .dat file. Request RF via *NODE PRINT (OutputRequest).", "Lama", "Application")
         {
+            Message = Name + "\nLama";
         }
 
         protected override string DefaultEvaluationUnit => "ReadResults";
@@ -34,13 +35,16 @@ namespace Lama.Grasshopper.Components
 
         protected override void RegisterEvaluationUnits(EvaluationUnitManager mngr)
         {
-            var unit = new EvaluationUnit("ReadResults", "ReadResults", "Read nodal and element results from DAT.");
+            var unit = new EvaluationUnit("ReadResults", "ReadResults", "Read displacements, reaction forces and moments (when printed), and element stresses from DAT.");
 
             unit.RegisterInputParam(new Param_GenericObject(), "Model", "M", "StructuralModel used to map result IDs to positions and resolve output file paths.", GH_ParamAccess.item);
 
-            unit.RegisterOutputParam(new Param_String(), "Dat Path", "Path", "Resolved .dat file path.");
+            unit.RegisterOutputParam(new Param_GenericObject(), "Model", "M", "StructuralModel passed through.");
             unit.RegisterOutputParam(new Param_Point(), "Node Positions", "P", "Node positions aligned with U.");
             unit.RegisterOutputParam(new Param_Vector(), "Node Displacements", "U", "Nodal displacement vectors.");
+            unit.RegisterOutputParam(new Param_Point(), "RF Positions", "Prf", "Node positions aligned with reaction force vectors.");
+            unit.RegisterOutputParam(new Param_Vector(), "Reaction forces", "RF", "Nodal reaction forces from *NODE PRINT, RF (RF1–RF3).");
+            unit.RegisterOutputParam(new Param_Vector(), "Reaction moments", "RM", "Nodal reaction moments (RF4–RF6) when the .dat row has six values; otherwise zero.");
             unit.RegisterOutputParam(new Param_Point(), "Stress Positions", "Sp", "Element stress positions aligned with stress columns.");
             unit.RegisterOutputParam(new Param_Number(), "Sxx", "Sxx", "Normal stress xx.");
             unit.RegisterOutputParam(new Param_Number(), "Syy", "Syy", "Normal stress yy.");
@@ -53,19 +57,21 @@ namespace Lama.Grasshopper.Components
             var nodalMenu = new GH_ExtendableMenu(0, "menu_nodal") { Name = "Nodal Results" };
             nodalMenu.RegisterOutputPlug(unit.Outputs[1]); // P
             nodalMenu.RegisterOutputPlug(unit.Outputs[2]); // U
+            nodalMenu.RegisterOutputPlug(unit.Outputs[3]); // Prf
+            nodalMenu.RegisterOutputPlug(unit.Outputs[4]); // RF
+            nodalMenu.RegisterOutputPlug(unit.Outputs[5]); // RM
             nodalMenu.Collapse();
             unit.AddMenu(nodalMenu);
 
             var elementMenu = new GH_ExtendableMenu(1, "menu_element") { Name = "Element Results" };
-            elementMenu.RegisterOutputPlug(unit.Outputs[0]);  // Path
-            elementMenu.RegisterOutputPlug(unit.Outputs[3]);  // Sp
-            elementMenu.RegisterOutputPlug(unit.Outputs[4]);  // Sxx
-            elementMenu.RegisterOutputPlug(unit.Outputs[5]);  // Syy
-            elementMenu.RegisterOutputPlug(unit.Outputs[6]);  // Szz
-            elementMenu.RegisterOutputPlug(unit.Outputs[7]);  // Sxy
-            elementMenu.RegisterOutputPlug(unit.Outputs[8]);  // Sxz
-            elementMenu.RegisterOutputPlug(unit.Outputs[9]);  // Syz
-            elementMenu.RegisterOutputPlug(unit.Outputs[10]); // SvM
+            elementMenu.RegisterOutputPlug(unit.Outputs[6]);  // Sp
+            elementMenu.RegisterOutputPlug(unit.Outputs[7]);  // Sxx
+            elementMenu.RegisterOutputPlug(unit.Outputs[8]);  // Syy
+            elementMenu.RegisterOutputPlug(unit.Outputs[9]);  // Szz
+            elementMenu.RegisterOutputPlug(unit.Outputs[10]); // Sxy
+            elementMenu.RegisterOutputPlug(unit.Outputs[11]); // Sxz
+            elementMenu.RegisterOutputPlug(unit.Outputs[12]); // Syz
+            elementMenu.RegisterOutputPlug(unit.Outputs[13]); // SvM
             elementMenu.Collapse();
             unit.AddMenu(elementMenu);
 
@@ -89,8 +95,8 @@ namespace Lama.Grasshopper.Components
                 return;
             }
 
+            DA.SetData(0, model);
             var datPath = ResolveDatPath(model);
-            DA.SetData(0, datPath);
 
             if (string.IsNullOrWhiteSpace(datPath) || !File.Exists(datPath))
             {
@@ -118,6 +124,19 @@ namespace Lama.Grasshopper.Components
                 {
                     DA.SetDataList(1, emptyPoints);
                     DA.SetDataList(2, emptyVectors);
+                }
+
+                if (CalculixDatExtractors.TryGetNodalReactions(tables, out var reactions))
+                {
+                    DA.SetDataList(3, MapReactionNodePoints(reactions, nodeMap));
+                    DA.SetDataList(4, MapReactionForces(reactions));
+                    DA.SetDataList(5, MapReactionMoments(reactions));
+                }
+                else
+                {
+                    DA.SetDataList(3, emptyPoints);
+                    DA.SetDataList(4, emptyVectors);
+                    DA.SetDataList(5, emptyVectors);
                 }
 
                 // Element outputs
@@ -167,25 +186,25 @@ namespace Lama.Grasshopper.Components
                         svm.Add(ComputeVonMises(sxxVal, syyVal, szzVal, sxyVal, sxzVal, syzVal));
                     }
 
-                    DA.SetDataList(3, stressPoints);
-                    DA.SetDataList(4, sxx);
-                    DA.SetDataList(5, syy);
-                    DA.SetDataList(6, szz);
-                    DA.SetDataList(7, sxy);
-                    DA.SetDataList(8, sxz);
-                    DA.SetDataList(9, syz);
-                    DA.SetDataList(10, svm);
+                    DA.SetDataList(6, stressPoints);
+                    DA.SetDataList(7, sxx);
+                    DA.SetDataList(8, syy);
+                    DA.SetDataList(9, szz);
+                    DA.SetDataList(10, sxy);
+                    DA.SetDataList(11, sxz);
+                    DA.SetDataList(12, syz);
+                    DA.SetDataList(13, svm);
                 }
                 else
                 {
-                    DA.SetDataList(3, emptyPoints);
-                    DA.SetDataList(4, emptyNumbers);
-                    DA.SetDataList(5, emptyNumbers);
-                    DA.SetDataList(6, emptyNumbers);
+                    DA.SetDataList(6, emptyPoints);
                     DA.SetDataList(7, emptyNumbers);
                     DA.SetDataList(8, emptyNumbers);
                     DA.SetDataList(9, emptyNumbers);
                     DA.SetDataList(10, emptyNumbers);
+                    DA.SetDataList(11, emptyNumbers);
+                    DA.SetDataList(12, emptyNumbers);
+                    DA.SetDataList(13, emptyNumbers);
                 }
             }
             catch (Exception ex)
@@ -204,13 +223,16 @@ namespace Lama.Grasshopper.Components
             DA.SetDataList(1, emptyPoints);
             DA.SetDataList(2, emptyVectors);
             DA.SetDataList(3, emptyPoints);
-            DA.SetDataList(4, emptyNumbers);
-            DA.SetDataList(5, emptyNumbers);
-            DA.SetDataList(6, emptyNumbers);
+            DA.SetDataList(4, emptyVectors);
+            DA.SetDataList(5, emptyVectors);
+            DA.SetDataList(6, emptyPoints);
             DA.SetDataList(7, emptyNumbers);
             DA.SetDataList(8, emptyNumbers);
             DA.SetDataList(9, emptyNumbers);
             DA.SetDataList(10, emptyNumbers);
+            DA.SetDataList(11, emptyNumbers);
+            DA.SetDataList(12, emptyNumbers);
+            DA.SetDataList(13, emptyNumbers);
         }
 
         private static Dictionary<int, Point3d> BuildElementCentroidMap(
@@ -272,6 +294,48 @@ namespace Lama.Grasshopper.Components
                 displacements.Add(new Vector3d(vector.X, vector.Y, vector.Z));
 
             return displacements;
+        }
+
+        private static List<Point3d> MapReactionNodePoints(
+            IEnumerable<NodalReactionResult> reactions,
+            IReadOnlyDictionary<int, Node> nodeMap)
+        {
+            var points = new List<Point3d>();
+            if (reactions == null || nodeMap == null || nodeMap.Count == 0)
+                return points;
+
+            foreach (var r in reactions)
+            {
+                if (!nodeMap.TryGetValue(r.NodeId, out var node))
+                {
+                    points.Add(Point3d.Unset);
+                    continue;
+                }
+
+                points.Add(new Point3d(node.X, node.Y, node.Z));
+            }
+
+            return points;
+        }
+
+        private static List<Vector3d> MapReactionForces(IEnumerable<NodalReactionResult> reactions)
+        {
+            var list = new List<Vector3d>();
+            if (reactions == null)
+                return list;
+            foreach (var r in reactions)
+                list.Add(new Vector3d(r.Fx, r.Fy, r.Fz));
+            return list;
+        }
+
+        private static List<Vector3d> MapReactionMoments(IEnumerable<NodalReactionResult> reactions)
+        {
+            var list = new List<Vector3d>();
+            if (reactions == null)
+                return list;
+            foreach (var r in reactions)
+                list.Add(new Vector3d(r.Mx, r.My, r.Mz));
+            return list;
         }
 
         private static double ComputeVonMises(double sxx, double syy, double szz, double sxy, double sxz, double syz)

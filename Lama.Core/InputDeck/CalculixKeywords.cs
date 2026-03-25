@@ -9,11 +9,15 @@ namespace Lama.Core.InputDeck
         public const string Elset = "*ELSET";
         public const string Material = "*MATERIAL";
         public const string Elastic = "*ELASTIC";
+        public const string ElasticEngineering = "*ELASTIC,TYPE=ENGINEERING CONSTANTS";
+        public const string Density = "*DENSITY";
         public const string Plastic = "*PLASTIC";
         public const string SolidSection = "*SOLID SECTION";
         public const string ShellSection = "*SHELL SECTION";
+        public const string Orientation = "*ORIENTATION";
         public const string Boundary = "*BOUNDARY";
         public const string Cload = "*CLOAD";
+        public const string Dload = "*DLOAD";
         public const string Step = "*STEP";
         public const string EndStep = "*END STEP";
         public const string Static = "*STATIC";

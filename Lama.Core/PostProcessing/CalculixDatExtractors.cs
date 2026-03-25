@@ -24,6 +24,31 @@ namespace Lama.Core.PostProcessing
     }
 
     /// <summary>
+    /// Nodal reaction from a CalculiX <c>*NODE PRINT</c> RF block: forces (RF1–RF3) and optional moments (RF4–RF6).
+    /// </summary>
+    public sealed class NodalReactionResult
+    {
+        public int NodeId { get; }
+        public double Fx { get; }
+        public double Fy { get; }
+        public double Fz { get; }
+        public double Mx { get; }
+        public double My { get; }
+        public double Mz { get; }
+
+        public NodalReactionResult(int nodeId, double fx, double fy, double fz, double mx, double my, double mz)
+        {
+            NodeId = nodeId;
+            Fx = fx;
+            Fy = fy;
+            Fz = fz;
+            Mx = mx;
+            My = my;
+            Mz = mz;
+        }
+    }
+
+    /// <summary>
     /// Typed element stress result extracted from a CalculiX .dat table.
     /// </summary>
     public sealed class ElementStressResult
@@ -52,9 +77,41 @@ namespace Lama.Core.PostProcessing
 
         public static bool TryGetNodalReactions(
             IEnumerable<CalculixDatTable> tables,
-            out IReadOnlyList<NodalVectorResult> reactions)
+            out IReadOnlyList<NodalReactionResult> reactions)
         {
-            return TryGetNodalVectorByKeyword(tables, "reaction", out reactions);
+            if (tables == null)
+                throw new ArgumentNullException(nameof(tables));
+
+            var table = SelectBestReactionTable(tables);
+            if (table == null)
+            {
+                reactions = Array.Empty<NodalReactionResult>();
+                return false;
+            }
+
+            var list = new List<NodalReactionResult>();
+            foreach (var row in table.Rows)
+            {
+                if (row.Values.Count < 3)
+                    continue;
+                if (row.Values.Count >= 6)
+                {
+                    list.Add(new NodalReactionResult(
+                        row.EntityId,
+                        row.Values[0], row.Values[1], row.Values[2],
+                        row.Values[3], row.Values[4], row.Values[5]));
+                }
+                else
+                {
+                    list.Add(new NodalReactionResult(
+                        row.EntityId,
+                        row.Values[0], row.Values[1], row.Values[2],
+                        0.0, 0.0, 0.0));
+                }
+            }
+
+            reactions = list;
+            return list.Count > 0;
         }
 
         public static bool TryGetElementStress(
@@ -108,6 +165,22 @@ namespace Lama.Core.PostProcessing
                 .FindTablesByHeaderKeyword(tables, keyword)
                 .OrderByDescending(t => t.Rows.Count)
                 .ThenByDescending(t => t.Rows.Count == 0 ? 0 : t.Rows[0].Values.Count)
+                .FirstOrDefault();
+        }
+
+        private static CalculixDatTable SelectBestReactionTable(IEnumerable<CalculixDatTable> tables)
+        {
+            var fromReaction = CalculixDatParser.FindTablesByHeaderKeyword(tables, "reaction").ToList();
+            IEnumerable<CalculixDatTable> candidates = fromReaction.Count > 0
+                ? fromReaction
+                : tables.Where(t => t.HeaderLines.Any(h =>
+                    h.IndexOf("rf1", StringComparison.OrdinalIgnoreCase) >= 0));
+
+            return candidates
+                .OrderByDescending(t => t.Rows.Count)
+                .ThenByDescending(t => t.Rows.Count == 0
+                    ? 0
+                    : t.Rows.Max(r => r.Values.Count))
                 .FirstOrDefault();
         }
     }

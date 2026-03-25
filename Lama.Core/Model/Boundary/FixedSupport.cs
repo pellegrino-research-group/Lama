@@ -5,7 +5,7 @@ using System.Linq;
 namespace Lama.Core.Model.Boundary
 {
     /// <summary>
-    /// Homogeneous displacement constraints for a node set.
+    /// Homogeneous displacement constraints for a node set (CalculiX *BOUNDARY DOFs 1–6).
     /// </summary>
     public sealed class FixedSupport
     {
@@ -24,10 +24,46 @@ namespace Lama.Core.Model.Boundary
         }
         public bool HasNodeIds => _nodeIds != null;
         public IReadOnlyList<SupportPointTarget> TargetPoints { get; }
-        public bool FixTranslations { get; }
-        public bool FixRotations { get; }
 
-        public FixedSupport(string name, IEnumerable<int> nodeIds, bool fixTranslations = true, bool fixRotations = false)
+        /// <summary>Fix translational DOF 1 (Ux).</summary>
+        public bool FixUx { get; }
+        /// <summary>Fix translational DOF 2 (Uy).</summary>
+        public bool FixUy { get; }
+        /// <summary>Fix translational DOF 3 (Uz).</summary>
+        public bool FixUz { get; }
+        /// <summary>Fix rotational DOF 4 (Rx).</summary>
+        public bool FixRx { get; }
+        /// <summary>Fix rotational DOF 5 (Ry).</summary>
+        public bool FixRy { get; }
+        /// <summary>Fix rotational DOF 6 (Rz).</summary>
+        public bool FixRz { get; }
+
+        public bool IsDofFixed(int dof1To6)
+        {
+            if (dof1To6 < 1 || dof1To6 > 6)
+                throw new ArgumentOutOfRangeException(nameof(dof1To6));
+
+            return dof1To6 switch
+            {
+                1 => FixUx,
+                2 => FixUy,
+                3 => FixUz,
+                4 => FixRx,
+                5 => FixRy,
+                6 => FixRz,
+                _ => false
+            };
+        }
+
+        public FixedSupport(
+            string name,
+            IEnumerable<int> nodeIds,
+            bool fixUx,
+            bool fixUy,
+            bool fixUz,
+            bool fixRx,
+            bool fixRy,
+            bool fixRz)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Support name cannot be empty.", nameof(name));
@@ -41,11 +77,23 @@ namespace Lama.Core.Model.Boundary
             Name = name;
             _nodeIds = ids;
             TargetPoints = Array.Empty<SupportPointTarget>();
-            FixTranslations = fixTranslations;
-            FixRotations = fixRotations;
+            FixUx = fixUx;
+            FixUy = fixUy;
+            FixUz = fixUz;
+            FixRx = fixRx;
+            FixRy = fixRy;
+            FixRz = fixRz;
         }
 
-        public FixedSupport(string name, IEnumerable<SupportPointTarget> targetPoints, bool fixTranslations = true, bool fixRotations = false)
+        public FixedSupport(
+            string name,
+            IEnumerable<SupportPointTarget> targetPoints,
+            bool fixUx,
+            bool fixUy,
+            bool fixUz,
+            bool fixRx,
+            bool fixRy,
+            bool fixRz)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Support name cannot be empty.", nameof(name));
@@ -57,13 +105,17 @@ namespace Lama.Core.Model.Boundary
             Name = name;
             _nodeIds = null;
             TargetPoints = points;
-            FixTranslations = fixTranslations;
-            FixRotations = fixRotations;
+            FixUx = fixUx;
+            FixUy = fixUy;
+            FixUz = fixUz;
+            FixRx = fixRx;
+            FixRy = fixRy;
+            FixRz = fixRz;
         }
 
         public FixedSupport ResolveNodeIds(IEnumerable<int> nodeIds)
         {
-            return new FixedSupport(Name, nodeIds, FixTranslations, FixRotations);
+            return new FixedSupport(Name, nodeIds, FixUx, FixUy, FixUz, FixRx, FixRy, FixRz);
         }
 
         public readonly struct SupportPointTarget : IEquatable<SupportPointTarget>

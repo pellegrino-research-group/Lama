@@ -30,6 +30,7 @@ namespace Lama.Grasshopper.Components
                 "Create a step output request card. Switch between Node and Element output.",
                 "Lama", "Model")
         {
+            Message = Name + "\nLama";
         }
 
         protected override string DefaultEvaluationUnit => "Node Output";
@@ -72,7 +73,7 @@ namespace Lama.Grasshopper.Components
 
             var panel = new MenuPanel(0, "node_panel");
             _cbNodeU = new MenuCheckBox(0, "U", "U  (Displacements)") { Active = true };
-            _cbNodeRF = new MenuCheckBox(1, "RF", "RF (Reaction forces)") { Active = false };
+            _cbNodeRF = new MenuCheckBox(1, "RF", "RF (Reaction forces)") { Active = true };
             _cbNodeV = new MenuCheckBox(2, "V", "V  (Velocities)") { Active = false };
             _cbNodeA = new MenuCheckBox(3, "A", "A  (Accelerations)") { Active = false };
 
@@ -91,11 +92,13 @@ namespace Lama.Grasshopper.Components
             optionsMenu.Name = "Options";
 
             var optPanel = new MenuPanel(1, "node_opt_panel");
-            _printCheckNode = new MenuCheckBox(10, "Print", "Print to .dat") { Active = false };
+            _printCheckNode = new MenuCheckBox(10, "Print", "Print to .dat") { Active = true };
             _printCheckNode.ValueChanged += OnCheckChanged;
             optPanel.AddControl(_printCheckNode);
             optionsMenu.AddControl(optPanel);
 
+            variablesMenu.Expand();
+            optionsMenu.Expand();
             unit.AddMenu(variablesMenu);
             unit.AddMenu(optionsMenu);
 
@@ -147,11 +150,13 @@ namespace Lama.Grasshopper.Components
             optionsMenu.Name = "Options";
 
             var optPanel = new MenuPanel(1, "elem_opt_panel");
-            _printCheckElement = new MenuCheckBox(10, "Print", "Print to .dat") { Active = false };
+            _printCheckElement = new MenuCheckBox(10, "Print", "Print to .dat") { Active = true };
             _printCheckElement.ValueChanged += OnCheckChanged;
             optPanel.AddControl(_printCheckElement);
             optionsMenu.AddControl(optPanel);
 
+            variablesMenu.Expand();
+            optionsMenu.Expand();
             unit.AddMenu(variablesMenu);
             unit.AddMenu(optionsMenu);
 

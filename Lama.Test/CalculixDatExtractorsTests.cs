@@ -39,8 +39,49 @@ namespace Lama.Test
             Assert.True(found);
             Assert.Single(reactions);
             Assert.Equal(10, reactions[0].NodeId);
-            Assert.Equal(100.0, reactions[0].X, 12);
-            Assert.Equal(-500.0, reactions[0].Z, 12);
+            Assert.Equal(100.0, reactions[0].Fx, 12);
+            Assert.Equal(-500.0, reactions[0].Fz, 12);
+            Assert.Equal(0.0, reactions[0].Mx, 12);
+            Assert.Equal(0.0, reactions[0].Mz, 12);
+        }
+
+        [Fact]
+        public void TryGetNodalReactions_ShouldParseSixComponents_AsForceAndMoment()
+        {
+            const string datText = @"
+ reaction forces and moments for set support
+ node rf1 rf2 rf3 rf4 rf5 rf6
+ 5 10.0 0.0 0.0 0.0 20.0 -30.0
+";
+
+            var tables = CalculixDatParser.ParseText(datText);
+            var found = CalculixDatExtractors.TryGetNodalReactions(tables, out var reactions);
+
+            Assert.True(found);
+            Assert.Single(reactions);
+            Assert.Equal(5, reactions[0].NodeId);
+            Assert.Equal(10.0, reactions[0].Fx, 12);
+            Assert.Equal(20.0, reactions[0].My, 12);
+            Assert.Equal(-30.0, reactions[0].Mz, 12);
+        }
+
+        [Fact]
+        public void TryGetNodalReactions_ShouldMatchRfColumnHeader_WhenTitleOmitsReactionWord()
+        {
+            const string datText = @"
+ nodal output for set support
+ node rf1 rf2 rf3
+ 10 1.0 2.0 3.0
+";
+
+            var tables = CalculixDatParser.ParseText(datText);
+            var found = CalculixDatExtractors.TryGetNodalReactions(tables, out var reactions);
+
+            Assert.True(found);
+            Assert.Single(reactions);
+            Assert.Equal(10, reactions[0].NodeId);
+            Assert.Equal(1.0, reactions[0].Fx, 12);
+            Assert.Equal(3.0, reactions[0].Fz, 12);
         }
 
         [Fact]

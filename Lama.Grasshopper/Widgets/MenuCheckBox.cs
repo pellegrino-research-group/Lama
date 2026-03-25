@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 using GH_IO.Serialization;
@@ -9,6 +9,14 @@ namespace Lama.Grasshopper.Widgets
 {
 	public class MenuCheckBox : GH_Attr_Widget
 	{
+		public enum TagPlacement
+		{
+			/// <summary>Label left, checkbox right (default).</summary>
+			Beside,
+			/// <summary>Label centered above the checkbox.</summary>
+			Above
+		}
+
 		private bool _active;
 
 		private Rectangle _checkBounds;
@@ -16,6 +24,10 @@ namespace Lama.Grasshopper.Widgets
 		private Size _checkSize;
 
 		private float _padding = 4f;
+
+		private Size _tagMeasuredSize;
+
+		public TagPlacement TagPosition { get; set; } = TagPlacement.Beside;
 
 		public bool RenderTag
 		{
@@ -60,8 +72,16 @@ namespace Lama.Grasshopper.Widgets
 			if (RenderTag && Tag != null)
 			{
 				Size size = TextRenderer.MeasureText(Tag, WidgetServer.Instance.TextFont);
-				num += size.Width + (int)_padding;
-				num2 = Math.Max(size.Height, num2);
+				if (TagPosition == TagPlacement.Above)
+				{
+					num = Math.Max(size.Width, _checkSize.Width);
+					num2 = size.Height + (int)_padding + _checkSize.Height;
+				}
+				else
+				{
+					num += size.Width + (int)_padding;
+					num2 = Math.Max(size.Height, num2);
+				}
 			}
 			return new SizeF(num, num2);
 		}
@@ -73,8 +93,19 @@ namespace Lama.Grasshopper.Widgets
 
 		public override void Layout()
 		{
-			float num = base.CanvasPivot.Y + (base.Height - (float)_checkSize.Height) / 2f;
-			_checkBounds = new Rectangle((int)(base.CanvasPivot.X + base.CanvasBounds.Width - (float)_checkSize.Width), (int)num, _checkSize.Width, _checkSize.Height);
+			if (TagPosition == TagPlacement.Above && RenderTag && !string.IsNullOrEmpty(Tag))
+			{
+				_tagMeasuredSize = TextRenderer.MeasureText(Tag, WidgetServer.Instance.TextFont);
+				float checkX = base.CanvasPivot.X + (base.CanvasBounds.Width - (float)_checkSize.Width) / 2f;
+				float checkY = base.CanvasPivot.Y + _tagMeasuredSize.Height + _padding;
+				_checkBounds = new Rectangle((int)checkX, (int)checkY, _checkSize.Width, _checkSize.Height);
+			}
+			else
+			{
+				_tagMeasuredSize = Size.Empty;
+				float num = base.CanvasPivot.Y + (base.Height - (float)_checkSize.Height) / 2f;
+				_checkBounds = new Rectangle((int)(base.CanvasPivot.X + base.CanvasBounds.Width - (float)_checkSize.Width), (int)num, _checkSize.Width, _checkSize.Height);
+			}
 		}
 
 		public override bool Write(GH_IWriter writer)
@@ -111,8 +142,23 @@ namespace Lama.Grasshopper.Widgets
 			SolidBrush brush2 = new SolidBrush(Color.FromArgb(num, 0, 0, 0));
 			if (RenderTag && Tag != null)
 			{
-				PointF point = new PointF(base.CanvasPivot.X, base.CanvasPivot.Y);
-				graphics.DrawString(Tag, WidgetServer.Instance.TextFont, brush2, point);
+				if (TagPosition == TagPlacement.Above)
+				{
+					using (var fmt = new StringFormat { Alignment = StringAlignment.Center })
+					{
+						var tagRect = new RectangleF(
+							base.CanvasPivot.X,
+							base.CanvasPivot.Y,
+							base.CanvasBounds.Width,
+							_tagMeasuredSize.Height > 0 ? _tagMeasuredSize.Height : TextRenderer.MeasureText(Tag, WidgetServer.Instance.TextFont).Height);
+						graphics.DrawString(Tag, WidgetServer.Instance.TextFont, brush2, tagRect, fmt);
+					}
+				}
+				else
+				{
+					PointF point = new PointF(base.CanvasPivot.X, base.CanvasPivot.Y);
+					graphics.DrawString(Tag, WidgetServer.Instance.TextFont, brush2, point);
+				}
 			}
 			graphics.FillRectangle(brush, _checkBounds);
 			graphics.DrawRectangle(pen, _checkBounds);

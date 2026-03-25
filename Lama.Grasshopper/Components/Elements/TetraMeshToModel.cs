@@ -11,13 +11,14 @@ using Rhino.Geometry;
 
 namespace Lama.Grasshopper.Components
 {
-    public class HexMeshComponent : GH_Component
+    public class TetraMeshComponent : GH_Component
     {
-        public HexMeshComponent()
+        public TetraMeshComponent()
             : base(
-                "HexMesh",
-                "HexMesh",
-                "Create a Lama HexMesh definition from Rhino hex meshes (V:8, F:6).",
+                "TetraMesh",
+                "TetMesh",
+                "Create a Lama tetra mesh definition from Rhino tetra meshes (V:4, F:4). " +
+                "Each mesh becomes one CalculiX C3D10 (Tetra10) element; midside nodes are generated on edges.",
                 "Lama",
                 "Elements")
         {
@@ -26,8 +27,8 @@ namespace Lama.Grasshopper.Components
 
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
-            pManager.AddMeshParameter("Hex Meshes", "M", "Hex meshes. Each mesh must have V:8 and F:6.", GH_ParamAccess.list);
-            pManager.AddTextParameter("Element Set", "Elset", "Element set name.", GH_ParamAccess.item, "E_HEX");
+            pManager.AddMeshParameter("Tetra Meshes", "M", "Tetra meshes. Each mesh must have V:4 and F:4.", GH_ParamAccess.list);
+            pManager.AddTextParameter("Element Set", "Elset", "Element set name.", GH_ParamAccess.item, "E_TET");
             pManager.AddGenericParameter("Material", "Mat", "Optional material (MaterialBase) used to auto-create a SolidSection.", GH_ParamAccess.item);
             pManager[2].Optional = true;
             pManager.AddVectorParameter("Orientation Axis 1", "A1", "Optional local material axis-1 direction.", GH_ParamAccess.item, new Vector3d(1, 0, 0));
@@ -38,14 +39,14 @@ namespace Lama.Grasshopper.Components
 
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("HexMesh", "Hex", "Lama HexMesh definition.", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Mesh Count", "M", "Number of input hex meshes.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("TetraMesh", "Tet", "Lama tetra mesh definition (C3D10).", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Mesh Count", "M", "Number of input tetra meshes.", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             var meshes = new List<Mesh>();
-            var elementSet = "E_HEX";
+            var elementSet = "E_TET";
             object materialObj = null;
             var axis1 = new Vector3d(1, 0, 0);
             var axis2 = new Vector3d(0, 1, 0);
@@ -95,7 +96,7 @@ namespace Lama.Grasshopper.Components
 
             try
             {
-                var definition = new HexMeshDefinition(meshes, elementSet, material, orientation);
+                var definition = new TetraMeshDefinition(meshes, elementSet, material, orientation);
                 DA.SetData(0, definition);
                 DA.SetData(1, meshes.Count);
             }
@@ -133,6 +134,6 @@ namespace Lama.Grasshopper.Components
 
         protected override Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
 
-        public override Guid ComponentGuid => new Guid("2f590db4-1ccd-4df4-8f6d-c6f31948570c");
+        public override Guid ComponentGuid => new Guid("54d75df0-bc75-4ab5-8085-7fb56f94b48e");
     }
 }

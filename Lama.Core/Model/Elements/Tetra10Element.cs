@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace Lama.Core.Model.Elements
 {
     /// <summary>
-    /// Quadratic ten-node tetrahedral solid.
+    /// Quadratic ten-node tetrahedral solid (CalculiX TYPE=C3D10).
     /// </summary>
     public sealed class Tetra10Element : ElementBase
     {

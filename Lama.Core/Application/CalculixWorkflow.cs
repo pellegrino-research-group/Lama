@@ -104,8 +104,12 @@ namespace Lama.Core.Application
             model.FixedSupports.Add(new FixedSupport(
                 name: "BASE_FIX",
                 nodeIds: new[] { 1, 2, 3 },
-                fixTranslations: true,
-                fixRotations: false));
+                fixUx: true,
+                fixUy: true,
+                fixUz: true,
+                fixRx: false,
+                fixRy: false,
+                fixRz: false));
         }
 
         private static void AddMinimalLinearStaticStep(StructuralModel model)

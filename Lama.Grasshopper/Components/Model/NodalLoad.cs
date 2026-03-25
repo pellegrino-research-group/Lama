@@ -11,6 +11,7 @@ namespace Lama.Grasshopper.Components
         public NodalLoadComponent()
             : base("NodalLoad", "Load", "Create a nodal load (force/moment).", "Lama", "Model")
         {
+            Message = Name + "\nLama";
         }
 
         protected override void RegisterInputParams(GH_InputParamManager pManager)

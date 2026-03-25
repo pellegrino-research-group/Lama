@@ -1,4 +1,4 @@
-﻿using GH_IO.Serialization;
+using GH_IO.Serialization;
 using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
 using Grasshopper.Kernel;
@@ -111,6 +111,10 @@ namespace Lama.Grasshopper.Widgets
                 if (_controls[i] is MenuPanel)
                 {
                     ((MenuPanel)_controls[i])._activeControl = null;
+                }
+                else if (_controls[i] is MenuHorizontalPanel hp)
+                {
+                    hp.ClearActiveControl();
                 }
             }
             _activeControl = null;
