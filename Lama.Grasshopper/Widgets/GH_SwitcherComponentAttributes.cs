@@ -1,4 +1,4 @@
-﻿using GH_IO.Serialization;
+using GH_IO.Serialization;
 using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
 using Grasshopper.Kernel;
@@ -244,7 +244,7 @@ namespace Lama.Grasshopper.Widgets
             {
                 int val = ((List<IGH_StateTag>)componentInput.StateTags).Count * 20;
                 num3 = Math.Max(num3, val);
-                num2 = Math.Max(num2, GH_FontServer.StringWidth(componentInput.NickName, StandardFont.font()));
+                num2 = Math.Max(num2, GH_SwitcherParamLabel.MeasureWidth(componentInput, StandardFont.font()));
             }
             num2 = Math.Max(num2 + 6, 12);
             num2 += num3;
@@ -254,7 +254,7 @@ namespace Lama.Grasshopper.Widgets
             {
                 int val2 = ((List<IGH_StateTag>)componentOutput.StateTags).Count * 20;
                 num5 = Math.Max(num5, val2);
-                num4 = Math.Max(num4, GH_FontServer.StringWidth(componentOutput.NickName, StandardFont.font()));
+                num4 = Math.Max(num4, GH_SwitcherParamLabel.MeasureWidth(componentOutput, StandardFont.font()));
             }
             num4 = Math.Max(num4 + 6, 12);
             num4 += num5;
@@ -304,7 +304,7 @@ namespace Lama.Grasshopper.Widgets
             {
                 int val = ((List<IGH_StateTag>)componentInput.StateTags).Count * 20;
                 num2 = Math.Max(num2, val);
-                num = Math.Max(num, GH_FontServer.StringWidth(componentInput.NickName, StandardFont.font()));
+                num = Math.Max(num, GH_SwitcherParamLabel.MeasureWidth(componentInput, StandardFont.font()));
             }
             num = Math.Max(num + 6, 12);
             num += num2 + add_offset;
@@ -390,7 +390,7 @@ namespace Lama.Grasshopper.Widgets
             {
                 int val = ((List<IGH_StateTag>)componentOutput.StateTags).Count * 20;
                 num2 = Math.Max(num2, val);
-                num = Math.Max(num, GH_FontServer.StringWidth(componentOutput.NickName, StandardFont.font()));
+                num = Math.Max(num, GH_SwitcherParamLabel.MeasureWidth(componentOutput, StandardFont.font()));
             }
             num = Math.Max(num + 6, 12);
             num += num2 + add_offset;
@@ -520,7 +520,7 @@ namespace Lama.Grasshopper.Widgets
             {
                 int val = 20 * ((List<IGH_StateTag>)componentInput.StateTags).Count;
                 num2 = Math.Max(num2, val);
-                num = Math.Max(num, GH_FontServer.StringWidth(componentInput.NickName, StandardFont.font()));
+                num = Math.Max(num, GH_SwitcherParamLabel.MeasureWidth(componentInput, StandardFont.font()));
             }
             num = Math.Max(num + 6f, 12f);
             num += (float)num2;
@@ -607,7 +607,7 @@ namespace Lama.Grasshopper.Widgets
             {
                 int val = 20 * ((List<IGH_StateTag>)componentOutput.StateTags).Count;
                 num2 = Math.Max(num2, val);
-                num = Math.Max(num, GH_FontServer.StringWidth(componentOutput.NickName, StandardFont.font()));
+                num = Math.Max(num, GH_SwitcherParamLabel.MeasureWidth(componentOutput, StandardFont.font()));
             }
             num = Math.Max(num + 6f, 12f);
             num += (float)num2;
@@ -894,7 +894,7 @@ namespace Lama.Grasshopper.Widgets
                     RectangleF bounds = staticInput.Attributes.Bounds;
                     if (bounds.Width >= 1f)
                     {
-                        graphics.DrawString(staticInput.NickName, StandardFont.font(), solidBrush, bounds, farCenter);
+                        graphics.DrawString(GH_SwitcherParamLabel.CanvasText(staticInput), StandardFont.font(), solidBrush, bounds, farCenter);
                         GH_LinkedParamAttributes obj = (GH_LinkedParamAttributes)staticInput.Attributes;
                         GH_StateTagList val = (GH_StateTagList)typeof(GH_LinkedParamAttributes).GetField("m_renderTags", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(obj);
                         if (val != null)
@@ -909,7 +909,7 @@ namespace Lama.Grasshopper.Widgets
                     RectangleF bounds2 = staticOutput.Attributes.Bounds;
                     if (bounds2.Width >= 1f)
                     {
-                        graphics.DrawString(staticOutput.NickName, StandardFont.font(), solidBrush, bounds2, farCenter);
+                        graphics.DrawString(GH_SwitcherParamLabel.CanvasText(staticOutput), StandardFont.font(), solidBrush, bounds2, farCenter);
                         GH_LinkedParamAttributes obj2 = (GH_LinkedParamAttributes)staticOutput.Attributes;
                         GH_StateTagList val2 = (GH_StateTagList)typeof(GH_LinkedParamAttributes).GetField("m_renderTags", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(obj2);
                         if (val2 != null)

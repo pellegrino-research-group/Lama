@@ -35,7 +35,7 @@ namespace Lama.Test
                 StringComparison.Ordinal);
             File.WriteAllText(targetInputPath, inputText);
 
-            var exitCode = CalculixApplication.RunCalculix(executablePath, targetInputPath, outputDirectory, numberOfCores: 1);
+            var (exitCode, _, _) = CalculixApplication.RunCalculix(executablePath, targetInputPath, outputDirectory, numberOfCores: 1);
             Assert.Equal(0, exitCode);
 
             var datPath = Path.Combine(outputDirectory, $"{jobName}.dat");

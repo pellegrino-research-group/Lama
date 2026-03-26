@@ -12,7 +12,7 @@ namespace Lama.Grasshopper.Components
     public class StaticStepComponent : GH_SwitcherComponent
     {
         public StaticStepComponent()
-            : base("StaticStep", "Step",
+            : base("STEP", "STEP",
                 "Create a static analysis step (linear or nonlinear).",
                 "Lama", "Model")
         {

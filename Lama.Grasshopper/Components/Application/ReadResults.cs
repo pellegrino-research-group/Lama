@@ -60,7 +60,7 @@ namespace Lama.Grasshopper.Components
             nodalMenu.RegisterOutputPlug(unit.Outputs[3]); // Prf
             nodalMenu.RegisterOutputPlug(unit.Outputs[4]); // RF
             nodalMenu.RegisterOutputPlug(unit.Outputs[5]); // RM
-            nodalMenu.Collapse();
+            nodalMenu.Expand();
             unit.AddMenu(nodalMenu);
 
             var elementMenu = new GH_ExtendableMenu(1, "menu_element") { Name = "Element Results" };
@@ -72,7 +72,7 @@ namespace Lama.Grasshopper.Components
             elementMenu.RegisterOutputPlug(unit.Outputs[11]); // Sxz
             elementMenu.RegisterOutputPlug(unit.Outputs[12]); // Syz
             elementMenu.RegisterOutputPlug(unit.Outputs[13]); // SvM
-            elementMenu.Collapse();
+            elementMenu.Expand();
             unit.AddMenu(elementMenu);
 
             mngr.RegisterUnit(unit);

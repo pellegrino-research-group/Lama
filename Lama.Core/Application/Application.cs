@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Lama.Core.Application
 {
@@ -134,14 +135,21 @@ namespace Lama.Core.Application
         }
 
         /// <summary>
-        /// Runs CalculiX with the specified input file
+        /// Runs CalculiX with the specified input file.
         /// </summary>
         /// <param name="executablePath">Path to CalculiX executable</param>
-        /// <param name="inputFilePath">Path to input file (without extension)</param>
+        /// <param name="inputFilePath">Path to input file (with or without .inp; basename is passed to ccx)</param>
         /// <param name="workingDirectory">Working directory for the process</param>
         /// <param name="numberOfCores">Number of cores for OpenMP (OMP_NUM_THREADS). If null, system/default behavior is used.</param>
-        /// <returns>Exit code from CalculiX</returns>
-        public static int RunCalculix(string executablePath, string inputFilePath, string workingDirectory = null, int? numberOfCores = null)
+        /// <returns>
+        /// ExitCode: OS exit status of ccx. StandardOutput / StandardError: process streams (terminal-style echo, step log,
+        /// “Job finished”, timing banner, etc.). Nodal/element result tables are still written to the job .dat file on disk.
+        /// </returns>
+        public static (int ExitCode, string StandardOutput, string StandardError) RunCalculix(
+            string executablePath,
+            string inputFilePath,
+            string workingDirectory = null,
+            int? numberOfCores = null)
         {
             if (!ValidateExecutable(executablePath))
                 throw new FileNotFoundException($"CalculiX executable not found at: {executablePath}");
@@ -151,7 +159,7 @@ namespace Lama.Core.Application
 
             // Remove file extension if present (CalculiX expects basename)
             string inputBaseName = Path.GetFileNameWithoutExtension(inputFilePath);
-            
+
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
@@ -175,9 +183,14 @@ namespace Lama.Core.Application
             }
 
             process.Start();
-            process.WaitForExit();
 
-            return process.ExitCode;
+            // Read both streams on background threads so neither pipe fills (avoids deadlock).
+            var outTask = Task.Run(() => process.StandardOutput.ReadToEnd());
+            var errTask = Task.Run(() => process.StandardError.ReadToEnd());
+            process.WaitForExit();
+            Task.WaitAll(outTask, errTask);
+
+            return (process.ExitCode, outTask.Result, errTask.Result);
         }
 
         /// <summary>

@@ -29,7 +29,17 @@ namespace Lama.Core.Model
             ValidateUniqueElementIds();
             ValidateElementConnectivity();
             ValidateSections();
-            ValidateSteps();
+        }
+
+        /// <summary>
+        /// Ensures at least one analysis step is present. Required before running the solver;
+        /// omitted from <see cref="Validate"/> so input decks can be generated for incomplete models.
+        /// </summary>
+        public void EnsureHasAnalysisSteps()
+        {
+            if (Steps.Count == 0)
+                throw new InvalidOperationException(
+                    "Model must contain at least one analysis step. Connect a step component (e.g., StaticStep) to StructuralModel.");
         }
 
         private void ValidateUniqueNodeIds()
@@ -64,10 +74,5 @@ namespace Lama.Core.Model
             }
         }
 
-        private void ValidateSteps()
-        {
-            if (Steps.Count == 0)
-                throw new InvalidOperationException("At least one analysis step is required.");
-        }
     }
 }

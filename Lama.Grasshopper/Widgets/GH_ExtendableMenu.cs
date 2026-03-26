@@ -358,7 +358,7 @@ namespace Lama.Grasshopper.Widgets
                             RectangleF bounds = parameter.Attributes.Bounds;
                             if (bounds.Width >= 1f)
                             {
-                                graphics.DrawString(parameter.NickName, StandardFont.font(), solidBrush, bounds, farCenter);
+                                graphics.DrawString(GH_SwitcherParamLabel.CanvasText(parameter), StandardFont.font(), solidBrush, bounds, farCenter);
                                 GH_LinkedParamAttributes obj = (GH_LinkedParamAttributes)parameter.Attributes;
                                 FieldInfo field = typeof(GH_LinkedParamAttributes).GetField("m_renderTags", BindingFlags.Instance | BindingFlags.NonPublic);
                                 if (field != (FieldInfo)null)
@@ -386,7 +386,7 @@ namespace Lama.Grasshopper.Widgets
                             RectangleF bounds2 = parameter2.Attributes.Bounds;
                             if (bounds2.Width >= 1f)
                             {
-                                graphics.DrawString(parameter2.NickName, StandardFont.font(), solidBrush, bounds2, farCenter);
+                                graphics.DrawString(GH_SwitcherParamLabel.CanvasText(parameter2), StandardFont.font(), solidBrush, bounds2, farCenter);
                                 GH_LinkedParamAttributes obj2 = (GH_LinkedParamAttributes)parameter2.Attributes;
                                 FieldInfo field2 = typeof(GH_LinkedParamAttributes).GetField("m_renderTags", BindingFlags.Instance | BindingFlags.NonPublic);
                                 if (field2 != (FieldInfo)null)

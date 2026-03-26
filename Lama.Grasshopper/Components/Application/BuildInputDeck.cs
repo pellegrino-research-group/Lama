@@ -52,12 +52,6 @@ namespace Lama.Grasshopper.Components
                 return;
             }
 
-            if (model.Steps.Count == 0)
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Model must contain at least one analysis step. Connect a step component (e.g., StaticStep) to StructuralModel.");
-                return;
-            }
-
             if (string.IsNullOrWhiteSpace(outputDirectory))
                 outputDirectory = ResolveDefaultDirectory(jobName);
 

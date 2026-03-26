@@ -1,10 +1,11 @@
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Text;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Types;
 using Lama.Core.Model;
-using Lama.Grasshopper;
 using Lama.Core.Application;
 
 namespace Lama.Grasshopper.Components
@@ -49,8 +50,22 @@ namespace Lama.Grasshopper.Components
 
 		protected override void RegisterOutputParams(GH_OutputParamManager pManager)
 		{
-			pManager.AddTextParameter("StdOut", "Out", "Standard output from the process", GH_ParamAccess.item);
-			pManager.AddTextParameter("StdErr", "Err", "Standard error from the process", GH_ParamAccess.item);
+			pManager.AddGenericParameter("Model", "M", "StructuralModel passed through (same reference as input).", GH_ParamAccess.item);
+			pManager.AddTextParameter(
+				"StdOut",
+				"Out",
+				"ccx standard output — same echo/log as in a terminal (model stats, step progress, “Job finished”, timing).",
+				GH_ParamAccess.item);
+			pManager.AddTextParameter(
+				"StdErr",
+				"Err",
+				"ccx standard error (usually empty unless the executable writes diagnostics there).",
+				GH_ParamAccess.item);
+			pManager.AddTextParameter(
+				"Run Info",
+				"Info",
+				"Key=value lines: ccxProcessExitCode, inpPath, exePath, seconds (only lines with a value are emitted).",
+				GH_ParamAccess.item);
 		}
 
 		protected override void SolveInstance(IGH_DataAccess DA)
@@ -60,20 +75,37 @@ namespace Lama.Grasshopper.Components
 			string exePath = string.Empty;
 			int numberOfCores = 0;
 
+			void SetOutputs(StructuralModel m, string @out, string err, string info)
+			{
+				DA.SetData(0, m);
+				DA.SetData(1, @out ?? string.Empty);
+				DA.SetData(2, err ?? string.Empty);
+				DA.SetData(3, info ?? string.Empty);
+			}
+
 			// Get model input
 			if (!DA.GetData(0, ref modelObj))
 			{
-				DA.SetData(0, string.Empty);
-				DA.SetData(1, string.Empty);
+				SetOutputs(null, string.Empty, string.Empty, FormatRunInfo());
 				AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Missing model input");
 				return;
 			}
 
 			if (!TryUnwrapStructuralModel(modelObj, out var model))
 			{
-				DA.SetData(0, string.Empty);
-				DA.SetData(1, string.Empty);
+				SetOutputs(null, string.Empty, string.Empty, FormatRunInfo());
 				AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Model input must be a StructuralModel.");
+				return;
+			}
+
+			try
+			{
+				model.EnsureHasAnalysisSteps();
+			}
+			catch (InvalidOperationException ex)
+			{
+				SetOutputs(model, string.Empty, string.Empty, FormatRunInfo(inpPath: ResolveInputDeckPath(model)));
+				AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ex.Message);
 				return;
 			}
 
@@ -82,8 +114,7 @@ namespace Lama.Grasshopper.Components
 			// Validate input file exists
 			if (!File.Exists(inputFilePath))
 			{
-				DA.SetData(0, string.Empty);
-				DA.SetData(1, string.Empty);
+				SetOutputs(model, string.Empty, string.Empty, FormatRunInfo(inpPath: inputFilePath));
 				AddRuntimeMessage(
 					GH_RuntimeMessageLevel.Error,
 					$"Input file not found: {inputFilePath}. Ensure BuildInputDeck has been run and model.Path points to an existing .inp.");
@@ -93,8 +124,7 @@ namespace Lama.Grasshopper.Components
 			// Check for .inp extension
 			if (!inputFilePath.EndsWith(".inp", StringComparison.OrdinalIgnoreCase))
 			{
-				DA.SetData(0, string.Empty);
-				DA.SetData(1, string.Empty);
+				SetOutputs(model, string.Empty, string.Empty, FormatRunInfo(inpPath: inputFilePath));
 				AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Input file must have .inp extension");
 				return;
 			}
@@ -104,8 +134,7 @@ namespace Lama.Grasshopper.Components
 			bool hasCoresInput = DA.GetData(2, ref numberOfCores);
 			if (hasCoresInput && numberOfCores < 1)
 			{
-				DA.SetData(0, string.Empty);
-				DA.SetData(1, string.Empty);
+				SetOutputs(model, string.Empty, string.Empty, FormatRunInfo(inpPath: inputFilePath));
 				AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Cores must be >= 1 when provided.");
 				return;
 			}
@@ -116,8 +145,7 @@ namespace Lama.Grasshopper.Components
 				exePath = CalculixApplication.FindCalculixExecutable();
 				if (string.IsNullOrWhiteSpace(exePath))
 				{
-					DA.SetData(0, string.Empty);
-					DA.SetData(1, string.Empty);
+					SetOutputs(model, string.Empty, string.Empty, FormatRunInfo(inpPath: inputFilePath));
 					string platformHint = CalculixApplication.IsMacOS 
 						? " Common Mac paths: /usr/local/bin/ccx or /opt/homebrew/bin/ccx" 
 						: " Install CalculiX and ensure it's in your PATH";
@@ -133,8 +161,7 @@ namespace Lama.Grasshopper.Components
 			// Validate executable exists
 			if (!CalculixApplication.ValidateExecutable(exePath))
 			{
-				DA.SetData(0, string.Empty);
-				DA.SetData(1, string.Empty);
+				SetOutputs(model, string.Empty, string.Empty, FormatRunInfo(inpPath: inputFilePath, exePath: exePath));
 				string platformHint = CalculixApplication.IsMacOS 
 					? " Common Mac paths: /usr/local/bin/ccx or /opt/homebrew/bin/ccx" 
 					: "";
@@ -145,20 +172,26 @@ namespace Lama.Grasshopper.Components
 			// Run CalculiX using the Core Application class
 			try
 			{
-				string workingDirectory = Path.GetDirectoryName(inputFilePath);
+				string workingDirectory = Path.GetDirectoryName(inputFilePath) ?? string.Empty;
 				int? selectedCores = hasCoresInput ? numberOfCores : (int?)null;
-				int exitCode = CalculixApplication.RunCalculix(exePath, inputFilePath, workingDirectory, selectedCores);
 
-				// Read output files generated by CalculiX
-				string baseFileName = Path.GetFileNameWithoutExtension(inputFilePath);
-				string outputPath = Path.Combine(workingDirectory, baseFileName + ".dat");
-				string errorPath = Path.Combine(workingDirectory, baseFileName + ".sta");
+				var sw = Stopwatch.StartNew();
+				var (exitCode, standardOutput, standardError) =
+					CalculixApplication.RunCalculix(exePath, inputFilePath, workingDirectory, selectedCores);
+				sw.Stop();
 
-				string stdOut = File.Exists(outputPath) ? File.ReadAllText(outputPath) : $"Exit code: {exitCode}";
-				string stdErr = File.Exists(errorPath) ? File.ReadAllText(errorPath) : string.Empty;
+				string stdOut = standardOutput ?? string.Empty;
+				if (string.IsNullOrWhiteSpace(stdOut))
+					stdOut = FormattableString.Invariant($"Exit code: {exitCode}");
+				string stdErr = standardError ?? string.Empty;
 
-				DA.SetData(0, stdOut);
-				DA.SetData(1, stdErr);
+				string info = FormatRunInfo(
+					ccxProcessExitCode: exitCode,
+					inpPath: inputFilePath,
+					exePath: exePath,
+					seconds: sw.Elapsed.TotalSeconds);
+
+				SetOutputs(model, stdOut, stdErr, info);
 
 				if (exitCode == 0)
 				{
@@ -175,10 +208,31 @@ namespace Lama.Grasshopper.Components
 			}
 			catch (Exception ex)
 			{
-				DA.SetData(0, string.Empty);
-				DA.SetData(1, string.Empty);
+				SetOutputs(
+					model,
+					string.Empty,
+					string.Empty,
+					FormatRunInfo(inpPath: inputFilePath, exePath: exePath));
 				AddRuntimeMessage(GH_RuntimeMessageLevel.Error, $"Failed to run CalculiX: {ex.Message}");
 			}
+		}
+
+		private static string FormatRunInfo(
+			int? ccxProcessExitCode = null,
+			string inpPath = null,
+			string exePath = null,
+			double? seconds = null)
+		{
+			var sb = new StringBuilder();
+			if (ccxProcessExitCode.HasValue)
+				sb.AppendLine(FormattableString.Invariant($"ccxProcessExitCode={ccxProcessExitCode.Value}"));
+			if (!string.IsNullOrEmpty(inpPath))
+				sb.AppendLine("inpPath=" + inpPath);
+			if (!string.IsNullOrEmpty(exePath))
+				sb.AppendLine("exePath=" + exePath);
+			if (seconds.HasValue)
+				sb.AppendLine(FormattableString.Invariant($"seconds={seconds.Value.ToString("G", System.Globalization.CultureInfo.InvariantCulture)}"));
+			return sb.ToString().TrimEnd();
 		}
 
 		private static string ResolveInputDeckPath(StructuralModel model)

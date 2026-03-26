@@ -68,7 +68,7 @@ namespace Lama.Core.Application
                 executablePath,
                 inputPath,
                 outputDirectory,
-                numberOfCores);
+                numberOfCores).ExitCode;
         }
 
         private static void AddMinimalNodes(StructuralModel model)
