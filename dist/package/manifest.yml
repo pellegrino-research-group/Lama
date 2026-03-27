@@ -6,8 +6,8 @@ description: Grasshopper plugin that wraps CalculiX, an open-source finite eleme
   solver, for structural analysis inside Rhino.
 url: https://github.com/pellegrino-research-group/Lama
 keywords:
-- Alpaca4d
-- alpaca4d
+- Alpaca
+- alpaca
 - Lama
 - lama
 - fea

@@ -115,10 +115,9 @@ def build_plugin():
         print_step(f"Building plugin (Release, {target_framework})...")
         success, output = run_command(f"dotnet build Lama.Grasshopper/Lama.Grasshopper.csproj -c Release -f {target_framework}")
     else:
-        # macOS/Linux: build for net8.0-windows (will run on Windows Rhino)
-        target_framework = "net8.0-windows"
+        # macOS/Linux: build for net8.0
+        target_framework = "net8.0"
         print_step(f"Building plugin (Release, {target_framework})...")
-        # Need to specify windows runtime identifier for cross-platform build
         success, output = run_command(f"dotnet build Lama.Grasshopper/Lama.Grasshopper.csproj -c Release -f {target_framework}")
     
     if not success:
@@ -136,26 +135,25 @@ def build_plugin():
 
 
 def create_manifest(version):
-    """Create or update manifest.yml file."""
-    print_step(f"Creating manifest.yml for version {version}...")
-    
-    manifest = {
-        'name': 'Lama',
-        'version': version,
-        'authors': ['Lama'],
-        'description': 'Lama Grasshopper plugin for computational design',
-        'url': 'https://github.com/pellegrino-research-group/Lama',
-        'keywords': ['grasshopper', 'plugin', 'lama'],
-        'icon': 'icon.png'  # Optional: add if you have an icon
-    }
-    
-    # Create manifest in scripts folder (same location as this script)
+    """Update version in existing manifest.yml file."""
+    print_step(f"Updating manifest.yml version to {version}...")
+
     script_dir = Path(__file__).parent
     manifest_path = script_dir / "manifest.yml"
+
+    if not manifest_path.exists():
+        print_error(f"manifest.yml not found at {manifest_path}")
+        return None
+
+    with open(manifest_path, 'r') as f:
+        manifest = yaml.safe_load(f)
+
+    manifest['version'] = version
+
     with open(manifest_path, 'w') as f:
         yaml.dump(manifest, f, default_flow_style=False, sort_keys=False)
-    
-    print_success(f"Created {manifest_path}")
+
+    print_success(f"Updated version in {manifest_path}")
     return manifest_path
 
 
@@ -178,13 +176,30 @@ def create_yak_package(version):
     if platform.system() == "Windows":
         target_framework = "net48"
     else:
-        target_framework = "net8.0-windows"
+        target_framework = "net8.0"
+
+    build_output_dir = Path(f"Lama.Grasshopper/bin/Release/{target_framework}")
     
     # Copy .gha file
-    gha_source = Path(f"Lama.Grasshopper/bin/Release/{target_framework}/Lama.gha")
+    gha_source = build_output_dir / "Lama.gha"
     gha_dest = package_dir / "Lama.gha"
     shutil.copy2(gha_source, gha_dest)
     print_success(f"Copied {gha_source} to package")
+
+    # Copy Lama runtime dependencies required by Lama.gha
+    lama_dependency_dlls = list(build_output_dir.glob("Lama*.dll"))
+    if not lama_dependency_dlls:
+        print_warning(f"No Lama*.dll dependencies found in {build_output_dir}")
+
+    core_dll_found = False
+    for dll_source in lama_dependency_dlls:
+        shutil.copy2(dll_source, package_dir / dll_source.name)
+        print_success(f"Copied {dll_source} to package")
+        if dll_source.name.lower() == "lama.core.dll":
+            core_dll_found = True
+
+    if lama_dependency_dlls and not core_dll_found:
+        print_warning("Lama.Core.dll was not found in build output")
     
     # Copy manifest (from scripts folder)
     script_dir = Path(__file__).parent
@@ -192,6 +207,23 @@ def create_yak_package(version):
     manifest_dest = package_dir / "manifest.yml"
     shutil.copy2(manifest_source, manifest_dest)
     print_success("Copied manifest.yml to package")
+
+    # Copy icon if referenced in manifest
+    with open(manifest_source, 'r') as f:
+        manifest_data = yaml.safe_load(f)
+    icon_name = manifest_data.get('icon')
+    if icon_name:
+        icon_candidates = [
+            dist_dir / icon_name,
+            script_dir / icon_name,
+            Path("Lama.Grasshopper/Resources") / icon_name,
+        ]
+        icon_source = next((p for p in icon_candidates if p.exists()), None)
+        if icon_source:
+            shutil.copy2(icon_source, package_dir / icon_name)
+            print_success(f"Copied {icon_source} to package")
+        else:
+            print_warning(f"Icon '{icon_name}' not found, skipping")
     
     # Build the Yak package
     success, output = run_command("yak build", cwd=package_dir)
@@ -302,7 +334,7 @@ def main():
         import platform
         print_warning("Skipping build step")
         # Verify .gha exists
-        target_framework = "net48" if platform.system() == "Windows" else "net8.0-windows"
+        target_framework = "net48" if platform.system() == "Windows" else "net8.0"
         gha_path = Path(f"Lama.Grasshopper/bin/Release/{target_framework}/Lama.gha")
         if not gha_path.exists():
             print_error(f"Build artifact not found: {gha_path}")
