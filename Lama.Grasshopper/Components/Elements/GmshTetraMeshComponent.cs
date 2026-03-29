@@ -5,21 +5,18 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using Grasshopper.Kernel;
-using Grasshopper.Kernel.Types;
-using Lama.Core.Materials;
 using Lama.Core.Meshing;
-using Lama.Core.Model.Sections;
-using Lama.Grasshopper.Widgets;
+using Lama.Gh.Widgets;
 using Rhino.Geometry;
 
-namespace Lama.Grasshopper.Components
+namespace Lama.Gh.Components
 {
     /// <summary>
     /// Grasshopper component that tetrahedralizes a Brep or Mesh using Gmsh.
     /// For Brep/Mesh inputs the geometry is exported as STL.
     /// Alternatively, a path to a STEP/IGES file can be provided for higher-fidelity
     /// CAD-based meshing via the OpenCASCADE kernel.
-    /// The output <c>StructuralModel</c> plugs directly into the CcxModel assembler.
+    /// Outputs tetrahedral Rhino meshes (V:4, F:4) and the Gmsh log.
     /// </summary>
     public class GmshTetraMeshComponent : GH_ExtendableComponent
     {
@@ -41,7 +38,7 @@ namespace Lama.Grasshopper.Components
                 "Gmsh Tetra Mesh",
                 "GmshTet",
                 "Generate a tetrahedral volume mesh from a Brep, Mesh, or CAD file (STEP/IGES) " +
-                "using the Gmsh mesher. Output is a StructuralModel that can be fed into CcxModel.",
+                "using the Gmsh mesher.",
                 "Lama",
                 "Elements")
         {
@@ -170,24 +167,10 @@ namespace Lama.Grasshopper.Components
                 "When provided, Brep/Mesh inputs are ignored.",
                 GH_ParamAccess.item);
             pManager[2].Optional = true;
-
-            pManager.AddTextParameter("Element Set", "Elset",
-                "Element set name for CalculiX.", GH_ParamAccess.item, "E_TET");
-
-            pManager.AddGenericParameter("Material", "Mat",
-                "Optional material (MaterialBase) used to auto-create a SolidSection on the output model.",
-                GH_ParamAccess.item);
-            pManager[4].Optional = true;
-
-            pManager.AddTextParameter("Gmsh Path", "Gmsh",
-                "Path to the Gmsh executable. Leave empty to auto-detect.",
-                GH_ParamAccess.item);
-            pManager[5].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Model", "M", "StructuralModel fragment with tetra elements.", GH_ParamAccess.item);
             pManager.AddMeshParameter("Tetra Meshes", "T", "Tetrahedral meshes (one per element, V:4 F:4).", GH_ParamAccess.list);
             pManager.AddTextParameter("Log", "L", "Gmsh console output (stdout + stderr).", GH_ParamAccess.item);
         }
@@ -198,16 +181,10 @@ namespace Lama.Grasshopper.Components
             Brep brep = null;
             Mesh rhinoMesh = null;
             string cadFilePath = null;
-            var elementSet = "E_TET";
-            object materialObj = null;
-            string gmshPath = null;
 
             DA.GetData(0, ref brep);
             DA.GetData(1, ref rhinoMesh);
             DA.GetData(2, ref cadFilePath);
-            DA.GetData(3, ref elementSet);
-            DA.GetData(4, ref materialObj);
-            DA.GetData(5, ref gmshPath);
 
             // --- Build mesh options from widgets ---------------------------------
             var algoValues = new[] { 1, 4, 7, 10 };
@@ -271,15 +248,6 @@ namespace Lama.Grasshopper.Components
                 return;
             }
 
-            // --- Resolve material ------------------------------------------------
-            MaterialBase material = null;
-            if (materialObj != null && !TryUnwrapMaterial(materialObj, out material))
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
-                    "Material input must be a Lama MaterialBase.");
-                return;
-            }
-
             // --- Run Gmsh --------------------------------------------------------
             string gmshLog = null;
             try
@@ -287,28 +255,19 @@ namespace Lama.Grasshopper.Components
                 var model = GmshTetraMesher.Mesh(
                     geometryFilePath,
                     options,
-                    elementSet,
-                    gmshPath,
+                    "TETRA",
+                    null,
                     out gmshLog);
-
-                model.Name = "GmshTetraFragment";
-
-                if (material != null)
-                {
-                    model.Materials.Add(material);
-                    model.Sections.Add(new SolidSection(elementSet, material));
-                }
 
                 var tetraMeshes = BuildTetraMeshes(model);
 
-                DA.SetData(0, model);
-                DA.SetDataList(1, tetraMeshes);
-                DA.SetData(2, gmshLog);
+                DA.SetDataList(0, tetraMeshes);
+                DA.SetData(1, gmshLog);
             }
             catch (Exception ex)
             {
                 if (gmshLog != null)
-                    DA.SetData(2, gmshLog);
+                    DA.SetData(1, gmshLog);
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ex.Message);
             }
         }
@@ -432,37 +391,7 @@ namespace Lama.Grasshopper.Components
             writer.WriteLine("  endfacet");
         }
 
-        // ------------------------------------------------------------------
-        // Material unwrapping
-        // ------------------------------------------------------------------
-
-        private static bool TryUnwrapMaterial(object input, out MaterialBase material)
-        {
-            material = input as MaterialBase;
-            if (material != null)
-                return true;
-
-            if (input is IGH_Goo goo)
-            {
-                var scriptValue = goo.ScriptVariable();
-                material = scriptValue as MaterialBase;
-                if (material != null)
-                    return true;
-            }
-
-            var valueProp = input.GetType().GetProperty("Value");
-            if (valueProp != null)
-            {
-                var value = valueProp.GetValue(input);
-                material = value as MaterialBase;
-                if (material != null)
-                    return true;
-            }
-
-            return false;
-        }
-
-        protected override Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
+        protected override Bitmap Icon => Lama.Gh.Properties.Resources.Lama_24x24;
 
         public override Guid ComponentGuid => new Guid("7a3e5c12-d8b4-4f91-ae72-c1d3f5e79b08");
     }
