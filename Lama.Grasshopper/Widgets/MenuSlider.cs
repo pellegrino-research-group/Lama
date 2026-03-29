@@ -357,7 +357,7 @@ namespace Lama.Grasshopper.Widgets
 
 		public override GH_Attr_Widget IsTtipPoint(System.Drawing.PointF pt)
 		{
-			if (new System.Drawing.RectangleF(transfromation.X, transfromation.Y, base.Width, 10f).Contains(pt))
+			if (base.CanvasBounds.Contains(pt))
 			{
 				return this;
 			}

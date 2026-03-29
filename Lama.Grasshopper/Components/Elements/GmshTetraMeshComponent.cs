@@ -9,6 +9,7 @@ using Grasshopper.Kernel.Types;
 using Lama.Core.Materials;
 using Lama.Core.Meshing;
 using Lama.Core.Model.Sections;
+using Lama.Grasshopper.Widgets;
 using Rhino.Geometry;
 
 namespace Lama.Grasshopper.Components
@@ -20,8 +21,21 @@ namespace Lama.Grasshopper.Components
     /// CAD-based meshing via the OpenCASCADE kernel.
     /// The output <c>StructuralModel</c> plugs directly into the CcxModel assembler.
     /// </summary>
-    public class GmshTetraMeshComponent : GH_Component
+    public class GmshTetraMeshComponent : GH_ExtendableComponent
     {
+        // --- Widget fields ---
+        private MenuSlider _sliderMinSize;
+        private MenuSlider _sliderMaxSize;
+        private MenuSlider _sliderOptThreshold;
+        private MenuSlider _sliderSmoothing;
+        private MenuSlider _sliderAnisoMax;
+        private MenuDropDown _ddAlgorithm3D;
+        private MenuDropDown _ddElementOrder;
+        private MenuDropDown _ddQualityType;
+        private MenuDropDown _ddHighOrderOpt;
+        private MenuCheckBox _cbOptimize;
+        private MenuCheckBox _cbOptNetgen;
+
         public GmshTetraMeshComponent()
             : base(
                 "Gmsh Tetra Mesh",
@@ -31,6 +45,116 @@ namespace Lama.Grasshopper.Components
                 "Lama",
                 "Elements")
         {
+        }
+
+        protected override void Setup(GH_ExtendableComponentAttributes attr)
+        {
+            var menu = new GH_ExtendableMenu(0, "mesh_options") { Name = "Mesh Options" };
+
+            // --- Size sliders ---
+            _sliderMinSize = new MenuSlider(0, "min_size", 0.01, 1000.0, 1.0, 2)
+                { Header = "Mesh.CharacteristicLengthMin — minimum element edge length." };
+            _sliderMaxSize = new MenuSlider(1, "max_size", 0.01, 1000.0, 5.0, 2)
+                { Header = "Mesh.CharacteristicLengthMax — maximum element edge length." };
+
+            // --- Element order ---
+            _ddElementOrder = new MenuDropDown(2, "elem_order", "Element Order")
+                { Header = "Mesh.ElementOrder — 1 = linear C3D4, 2 = quadratic C3D10." };
+            _ddElementOrder.AddItem("1", "Linear (C3D4)");
+            _ddElementOrder.AddItem("2", "Quadratic (C3D10)");
+            _ddElementOrder.Value = 1; // default = quadratic
+
+            // --- Algorithm 3D ---
+            _ddAlgorithm3D = new MenuDropDown(3, "algo3d", "Algorithm 3D")
+                { Header = "Mesh.Algorithm3D — 3D meshing algorithm.\n1=Delaunay, 4=Frontal, 7=MMG3D, 10=HXT." };
+            _ddAlgorithm3D.AddItem("1", "Delaunay");
+            _ddAlgorithm3D.AddItem("4", "Frontal");
+            _ddAlgorithm3D.AddItem("7", "MMG3D");
+            _ddAlgorithm3D.AddItem("10", "HXT");
+            _ddAlgorithm3D.Value = 0; // default = Delaunay
+
+            // --- Optimize checkboxes ---
+            var rowOpt = new MenuHorizontalPanel(4, "opt_row");
+            _cbOptimize = new MenuCheckBox(0, "optimize", "Optimize")
+                { Active = true, TagPosition = MenuCheckBox.TagPlacement.Above,
+                  Header = "Mesh.Optimize — enable Gmsh's built-in mesh optimizer." };
+            _cbOptNetgen = new MenuCheckBox(1, "opt_netgen", "Netgen")
+                { Active = true, TagPosition = MenuCheckBox.TagPlacement.Above,
+                  Header = "Mesh.OptimizeNetgen — enable Netgen-based optimization." };
+            rowOpt.AddControl(_cbOptimize);
+            rowOpt.AddControl(_cbOptNetgen);
+
+            // --- Optimize threshold ---
+            _sliderOptThreshold = new MenuSlider(5, "opt_threshold", 0.0, 1.0, 0.3, 2)
+                { Header = "Mesh.OptimizeThreshold — quality threshold below which elements are optimized." };
+
+            // --- Smoothing ---
+            _sliderSmoothing = new MenuSlider(6, "smoothing", 0, 100, 5, 0)
+                { Header = "Mesh.Smoothing — number of smoothing passes applied to the mesh." };
+
+            // --- High-order optimization ---
+            _ddHighOrderOpt = new MenuDropDown(7, "ho_opt", "HighOrder Optimize")
+                { Header = "Mesh.HighOrderOptimize — optimization strategy for high-order nodes.\n0=None, 1=Optimization, 2=Elastic+Opt, 3=Elastic, 4=Fast curving." };
+            _ddHighOrderOpt.AddItem("0", "None");
+            _ddHighOrderOpt.AddItem("1", "Optimization");
+            _ddHighOrderOpt.AddItem("2", "Elastic + Opt");
+            _ddHighOrderOpt.AddItem("3", "Elastic");
+            _ddHighOrderOpt.AddItem("4", "Fast curving");
+            _ddHighOrderOpt.Value = 2; // default = Elastic + Opt
+
+            // --- Quality type ---
+            _ddQualityType = new MenuDropDown(8, "quality_type", "Quality Type")
+                { Header = "Mesh.QualityType — element quality measure used by Gmsh.\n0=SICN (Scaled Inverse Condition Number), 1=SIGE, 2=Gamma." };
+            _ddQualityType.AddItem("0", "SICN");
+            _ddQualityType.AddItem("1", "SIGE");
+            _ddQualityType.AddItem("2", "Gamma");
+            _ddQualityType.Value = 2; // default = Gamma
+
+            // --- AnisoMax ---
+            _sliderAnisoMax = new MenuSlider(9, "aniso_max", 1.0, 1e10, 1e10, 0)
+                { NumberFormat = "{0:0.##E+0}",
+                  Header = "Mesh.AnisoMax — maximum anisotropy ratio for mesh elements." };
+
+            // Wire up ValueChanged
+            _sliderMinSize.ValueChanged += OnWidgetChanged;
+            _sliderMaxSize.ValueChanged += OnWidgetChanged;
+            _sliderOptThreshold.ValueChanged += OnWidgetChanged;
+            _sliderSmoothing.ValueChanged += OnWidgetChanged;
+            _sliderAnisoMax.ValueChanged += OnWidgetChanged;
+            _ddAlgorithm3D.ValueChanged += OnWidgetChanged;
+            _ddElementOrder.ValueChanged += OnWidgetChanged;
+            _ddQualityType.ValueChanged += OnWidgetChanged;
+            _ddHighOrderOpt.ValueChanged += OnWidgetChanged;
+            _cbOptimize.ValueChanged += OnWidgetChanged;
+            _cbOptNetgen.ValueChanged += OnWidgetChanged;
+
+            // --- Labels + controls inside a MenuPanel (stacks vertically) ---
+            var panel = new MenuPanel(10, "opts_panel");
+            panel.AddControl(new MenuStaticText { Text = "Min Size" });
+            panel.AddControl(_sliderMinSize);
+            panel.AddControl(new MenuStaticText { Text = "Max Size" });
+            panel.AddControl(_sliderMaxSize);
+            panel.AddControl(_ddElementOrder);
+            panel.AddControl(_ddAlgorithm3D);
+            panel.AddControl(rowOpt);
+            panel.AddControl(new MenuStaticText { Text = "Opt Threshold" });
+            panel.AddControl(_sliderOptThreshold);
+            panel.AddControl(new MenuStaticText { Text = "Smoothing" });
+            panel.AddControl(_sliderSmoothing);
+            panel.AddControl(_ddHighOrderOpt);
+            panel.AddControl(_ddQualityType);
+            panel.AddControl(new MenuStaticText { Text = "AnisoMax" });
+            panel.AddControl(_sliderAnisoMax);
+
+            menu.AddControl(panel);
+
+            menu.Expand();
+            attr.AddMenu(menu);
+        }
+
+        private void OnWidgetChanged(object sender, EventArgs e)
+        {
+            ExpireSolution(true);
         }
 
         protected override void RegisterInputParams(GH_InputParamManager pManager)
@@ -47,28 +171,18 @@ namespace Lama.Grasshopper.Components
                 GH_ParamAccess.item);
             pManager[2].Optional = true;
 
-            pManager.AddNumberParameter("Min Size", "Lmin",
-                "Minimum characteristic element length.", GH_ParamAccess.item, 1.0);
-
-            pManager.AddNumberParameter("Max Size", "Lmax",
-                "Maximum characteristic element length.", GH_ParamAccess.item, 5.0);
-
-            pManager.AddIntegerParameter("Element Order", "Ord",
-                "1 = linear tetra (C3D4), 2 = quadratic tetra (C3D10).",
-                GH_ParamAccess.item, 2);
-
             pManager.AddTextParameter("Element Set", "Elset",
                 "Element set name for CalculiX.", GH_ParamAccess.item, "E_TET");
 
             pManager.AddGenericParameter("Material", "Mat",
                 "Optional material (MaterialBase) used to auto-create a SolidSection on the output model.",
                 GH_ParamAccess.item);
-            pManager[7].Optional = true;
+            pManager[4].Optional = true;
 
             pManager.AddTextParameter("Gmsh Path", "Gmsh",
                 "Path to the Gmsh executable. Leave empty to auto-detect.",
                 GH_ParamAccess.item);
-            pManager[8].Optional = true;
+            pManager[5].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
@@ -84,8 +198,6 @@ namespace Lama.Grasshopper.Components
             Brep brep = null;
             Mesh rhinoMesh = null;
             string cadFilePath = null;
-            double minSize = 1.0, maxSize = 5.0;
-            int order = 2;
             var elementSet = "E_TET";
             object materialObj = null;
             string gmshPath = null;
@@ -93,12 +205,28 @@ namespace Lama.Grasshopper.Components
             DA.GetData(0, ref brep);
             DA.GetData(1, ref rhinoMesh);
             DA.GetData(2, ref cadFilePath);
-            DA.GetData(3, ref minSize);
-            DA.GetData(4, ref maxSize);
-            DA.GetData(5, ref order);
-            DA.GetData(6, ref elementSet);
-            DA.GetData(7, ref materialObj);
-            DA.GetData(8, ref gmshPath);
+            DA.GetData(3, ref elementSet);
+            DA.GetData(4, ref materialObj);
+            DA.GetData(5, ref gmshPath);
+
+            // --- Build mesh options from widgets ---------------------------------
+            var algoValues = new[] { 1, 4, 7, 10 };
+            var hoValues = new[] { 0, 1, 2, 3, 4 };
+
+            var options = new GmshMeshOptions
+            {
+                MinSize = _sliderMinSize.Value,
+                MaxSize = _sliderMaxSize.Value,
+                ElementOrder = _ddElementOrder.Value == 0 ? 1 : 2,
+                Algorithm3D = algoValues[Math.Min(_ddAlgorithm3D.Value, algoValues.Length - 1)],
+                Optimize = _cbOptimize.Active ? 1 : 0,
+                OptimizeNetgen = _cbOptNetgen.Active ? 1 : 0,
+                OptimizeThreshold = _sliderOptThreshold.Value,
+                Smoothing = (int)_sliderSmoothing.Value,
+                HighOrderOptimize = hoValues[Math.Min(_ddHighOrderOpt.Value, hoValues.Length - 1)],
+                QualityType = Math.Min(_ddQualityType.Value, 2),
+                AnisoMax = _sliderAnisoMax.Value
+            };
 
             // --- Resolve geometry source ------------------------------------------
             string geometryFilePath;
@@ -138,7 +266,7 @@ namespace Lama.Grasshopper.Components
             }
             else
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
                     "Provide a Brep, a Mesh, or a CAD file path.");
                 return;
             }
@@ -158,9 +286,7 @@ namespace Lama.Grasshopper.Components
             {
                 var model = GmshTetraMesher.Mesh(
                     geometryFilePath,
-                    minSize,
-                    maxSize,
-                    order,
+                    options,
                     elementSet,
                     gmshPath,
                     out gmshLog);
@@ -172,10 +298,6 @@ namespace Lama.Grasshopper.Components
                     model.Materials.Add(material);
                     model.Sections.Add(new SolidSection(elementSet, material));
                 }
-
-                var points = model.Nodes
-                    .Select(n => new Point3d(n.X, n.Y, n.Z))
-                    .ToList();
 
                 var tetraMeshes = BuildTetraMeshes(model);
 

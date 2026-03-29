@@ -641,5 +641,21 @@ namespace Lama.Grasshopper.Widgets
             return true;
         }
 
+        public override GH_Attr_Widget IsTtipPoint(PointF pt)
+        {
+            if (base.CanvasBounds.Contains(pt))
+                return this;
+            return null;
+        }
+
+        public override void TooltipSetup(PointF canvasPoint, GH_TooltipDisplayEventArgs e)
+        {
+            e.Icon = null;
+            e.Title = _name + " (DropDown)";
+            e.Text = _header;
+            if (!Empty && current_value >= 0 && current_value < _items.Count)
+                e.Description = "Selected: " + _items[current_value].content;
+        }
+
     }
 }
