@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
 	public class MenuSlider : GH_Attr_Widget
 	{

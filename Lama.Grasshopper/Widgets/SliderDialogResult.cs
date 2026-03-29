@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Eto.Forms;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public sealed class SliderDialogResult
     {

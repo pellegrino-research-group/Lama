@@ -9,10 +9,10 @@ using Lama.Core.Model.Boundary;
 using Lama.Core.Model.Elements;
 using Lama.Core.Model.Sections;
 using Lama.Core.Model.Steps;
-using Lama.Grasshopper.Conversion;
-using Lama.Grasshopper.Definitions;
+using Lama.Gh.Conversion;
+using Lama.Gh.Definitions;
 
-namespace Lama.Grasshopper.Components
+namespace Lama.Gh.Components
 {
     public class CcxModel : GH_Component
     {
@@ -386,7 +386,7 @@ namespace Lama.Grasshopper.Components
             }
         }
 
-        protected override System.Drawing.Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
+        protected override System.Drawing.Bitmap Icon => Lama.Gh.Properties.Resources.Lama_24x24;
         public override Guid ComponentGuid => new Guid("1158a4ed-f262-4601-8e4f-349e72853a13");
     }
 }

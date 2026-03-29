@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Linq;
 
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public static class ValueList
     {

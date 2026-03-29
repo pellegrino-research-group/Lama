@@ -4,7 +4,7 @@ using Eto.Forms;
 using Grasshopper.Kernel;
 
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public sealed class WidgetServer
     {

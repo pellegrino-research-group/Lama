@@ -1,7 +1,7 @@
 ﻿using Grasshopper.Kernel;
 using System.Drawing;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public class StandardFont
     {

@@ -4,7 +4,7 @@ using System.Linq;
 using Grasshopper.Kernel;
 using Lama.Core.InputDeck;
 
-namespace Lama.Grasshopper.Components
+namespace Lama.Gh.Components
 {
     /// <summary>
     /// Loads a CalculiX/Abaqus-style .inp file into a <see cref="Lama.Core.Model.StructuralModel"/>.
@@ -88,7 +88,7 @@ namespace Lama.Grasshopper.Components
             }
         }
 
-        protected override System.Drawing.Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
+        protected override System.Drawing.Bitmap Icon => Lama.Gh.Properties.Resources.Lama_24x24;
 
         public override Guid ComponentGuid => new Guid("7f3a9c21-4b0e-4d8f-9c12-88a1f0e3d4c2");
     }

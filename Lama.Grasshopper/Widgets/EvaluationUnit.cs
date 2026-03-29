@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Reflection;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public class EvaluationUnit
     {

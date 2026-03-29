@@ -3,7 +3,7 @@ using Grasshopper.Kernel.Undo;
 using System;
 using System.Collections.Generic;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public class GH_SwitchAction : GH_UndoAction
     {

@@ -4,7 +4,7 @@ using Rhino.Geometry;
 using Lama.Core.Model;
 using Lama.Core.Model.Loads;
 
-namespace Lama.Grasshopper.Components
+namespace Lama.Gh.Components
 {
     public class NodalLoadComponent : GH_Component
     {
@@ -42,7 +42,7 @@ namespace Lama.Grasshopper.Components
             DA.SetData(0, new NodalLoad(point.X, point.Y, point.Z, dof, value));
         }
 
-        protected override System.Drawing.Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
+        protected override System.Drawing.Bitmap Icon => Lama.Gh.Properties.Resources.Lama_24x24;
         public override Guid ComponentGuid => new Guid("7360dc75-f79f-4417-ab5f-4ec8e5e20750");
     }
 }

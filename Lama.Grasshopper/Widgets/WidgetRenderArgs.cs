@@ -1,6 +1,6 @@
 ﻿using Grasshopper.GUI.Canvas;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public class WidgetRenderArgs
     {

@@ -5,7 +5,7 @@ using Lama.Core.Materials;
 using Lama.Core.Model.Sections;
 using Rhino.Geometry;
 
-namespace Lama.Grasshopper.Definitions
+namespace Lama.Gh.Definitions
 {
     /// <summary>
     /// Container for Rhino tetrahedral meshes (4 corners) converted to C3D10 elements.

@@ -4,7 +4,7 @@ using Grasshopper.GUI.Canvas;
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public abstract class GH_Attr_Widget
     {

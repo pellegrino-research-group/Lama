@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Grasshopper.Kernel;
 using Lama.Core.Model.Boundary;
-using Lama.Grasshopper.Widgets;
+using Lama.Gh.Widgets;
 using Rhino.Geometry;
 
-namespace Lama.Grasshopper.Components
+namespace Lama.Gh.Components
 {
     public class FixedSupportComponent : GH_ExtendableComponent
     {
@@ -147,7 +147,7 @@ namespace Lama.Grasshopper.Components
             return true;
         }
 
-        protected override System.Drawing.Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
+        protected override System.Drawing.Bitmap Icon => Lama.Gh.Properties.Resources.Lama_24x24;
         public override Guid ComponentGuid => new Guid("afecdf4d-4324-4521-92dc-e08e9252dabf");
     }
 }

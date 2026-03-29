@@ -9,7 +9,7 @@ using System.Windows.Forms;
 using System.Linq;
 using System.Xml.Linq;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public abstract class GH_SwitcherComponent : GH_Component
     {

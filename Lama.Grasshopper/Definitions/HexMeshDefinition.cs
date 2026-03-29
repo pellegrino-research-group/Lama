@@ -5,7 +5,7 @@ using Lama.Core.Materials;
 using Lama.Core.Model.Sections;
 using Rhino.Geometry;
 
-namespace Lama.Grasshopper.Definitions
+namespace Lama.Gh.Definitions
 {
     /// <summary>
     /// Container for Rhino hexahedral meshes and conversion options.

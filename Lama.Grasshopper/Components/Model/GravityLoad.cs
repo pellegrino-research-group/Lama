@@ -2,7 +2,7 @@ using System;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
 
-namespace Lama.Grasshopper.Components
+namespace Lama.Gh.Components
 {
     public class GravityLoadComponent : GH_Component
     {
@@ -47,7 +47,7 @@ namespace Lama.Grasshopper.Components
                 magnitude, direction.X, direction.Y, direction.Z, elementSet));
         }
 
-        protected override System.Drawing.Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
+        protected override System.Drawing.Bitmap Icon => Lama.Gh.Properties.Resources.Lama_24x24;
         public override Guid ComponentGuid => new Guid("c8a2b7f1-3d6e-4a9b-b5c0-1e7f8d2a9c4b");
     }
 }

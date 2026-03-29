@@ -5,11 +5,11 @@ using Grasshopper.Kernel;
 using Grasshopper.Kernel.Types;
 using Lama.Core.Materials;
 using Lama.Core.Model.Sections;
-using Lama.Grasshopper;
-using Lama.Grasshopper.Definitions;
+using Lama.Gh;
+using Lama.Gh.Definitions;
 using Rhino.Geometry;
 
-namespace Lama.Grasshopper.Components
+namespace Lama.Gh.Components
 {
     public class TetraMeshComponent : GH_Component
     {
@@ -132,7 +132,7 @@ namespace Lama.Grasshopper.Components
             return false;
         }
 
-        protected override Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
+        protected override Bitmap Icon => Lama.Gh.Properties.Resources.Lama_24x24;
 
         public override Guid ComponentGuid => new Guid("54d75df0-bc75-4ab5-8085-7fb56f94b48e");
     }

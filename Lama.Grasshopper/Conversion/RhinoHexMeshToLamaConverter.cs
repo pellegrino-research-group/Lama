@@ -5,7 +5,7 @@ using Lama.Core.Model;
 using Lama.Core.Model.Elements;
 using Rhino.Geometry;
 
-namespace Lama.Grasshopper.Conversion
+namespace Lama.Gh.Conversion
 {
     /// <summary>
     /// Converts Rhino hex meshes (8 corner vertices) into Lama Hexa20 elements.

@@ -13,7 +13,7 @@ using System.Reflection;
 using System.Windows.Forms;
 using static Grasshopper.GUI.Canvas.GH_Canvas;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public class GH_SwitcherComponentAttributes : GH_ComponentAttributes
     {

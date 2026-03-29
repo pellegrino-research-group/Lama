@@ -7,7 +7,7 @@ using System;
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
 	[Serializable]
 	public class GH_ExtendableComponentAttributes : GH_ComponentAttributes
@@ -234,7 +234,7 @@ namespace Lama.Grasshopper.Widgets
 			{
 				return flag;
 			}
-			if (base.m_innerBounds.Contains(pt))
+			if (Bounds.Contains(pt))
 			{
 				GH_Attr_Widget gH_Attr_Widget = _collection.IsTtipPoint(pt);
 				if (gH_Attr_Widget != null)

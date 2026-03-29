@@ -2,7 +2,7 @@ using System.Drawing;
 using Grasshopper.GUI;
 using Grasshopper.Kernel;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     /// <summary>
     /// Canvas labels for switcher parameters: show full <see cref="IGH_Param.Name"/>,

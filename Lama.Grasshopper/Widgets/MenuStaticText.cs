@@ -4,7 +4,7 @@ using GH_IO.Serialization;
 using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public class MenuStaticText : GH_Attr_Widget
 	{

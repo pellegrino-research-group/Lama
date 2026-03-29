@@ -3,7 +3,7 @@ using Rhino;
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public class RuntimeComponentData
     {

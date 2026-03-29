@@ -4,7 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Resources;
 
-namespace Lama.Grasshopper
+namespace Lama.Gh
 {
     internal static class IconLoader
     {

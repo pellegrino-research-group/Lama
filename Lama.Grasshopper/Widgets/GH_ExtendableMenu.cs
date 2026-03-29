@@ -9,7 +9,7 @@ using System.Drawing;
 using System.Reflection;
 using System.Windows.Forms;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public class GH_ExtendableMenu : GH_Attr_Widget
     {

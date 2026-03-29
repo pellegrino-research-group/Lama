@@ -8,7 +8,7 @@ using Grasshopper.Kernel.Types;
 using Lama.Core.Model;
 using Lama.Core.Application;
 
-namespace Lama.Grasshopper.Components
+namespace Lama.Gh.Components
 {
 	public class RunWithExeComponent : GH_Component
 	{
@@ -283,7 +283,7 @@ namespace Lama.Grasshopper.Components
 			return false;
 		}
 
-		protected override Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
+		protected override Bitmap Icon => Lama.Gh.Properties.Resources.Lama_24x24;
 
 		public override Guid ComponentGuid => new Guid("e5e3f4f9-9a6a-4c05-9da3-b5cc6b61a7a3");
 	}

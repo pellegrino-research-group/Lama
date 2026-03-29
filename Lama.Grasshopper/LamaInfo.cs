@@ -2,8 +2,9 @@ using System;
 using System.Drawing;
 using Grasshopper.Kernel;
 using Grasshopper;
+using Lama.UI;
 
-namespace Lama.Grasshopper
+namespace Lama.Gh
 {
 	public class LamaInfo : GH_AssemblyInfo
 	{
@@ -24,12 +25,14 @@ namespace Lama.Grasshopper
 	{
 		public override GH_LoadingInstruction PriorityLoad()
 		{
+			Instances.CanvasCreated += MenuLoad.OnStartup;
+
 			Bitmap icon = LoadCategoryIcon();
 			if (icon != null)
 			{
 				Instances.ComponentServer.AddCategoryIcon("Lama", icon);
 			}
-			Instances.ComponentServer.AddCategorySymbolName("Lama", 'L');
+			Instances.ComponentServer.AddCategorySymbolName("Lama", '\u03BB');
 			return GH_LoadingInstruction.Proceed;
 		}
 

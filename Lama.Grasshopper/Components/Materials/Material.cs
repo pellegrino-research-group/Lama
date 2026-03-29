@@ -4,11 +4,11 @@ using System.Drawing;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Types;
-using Lama.Grasshopper.Widgets;
-using Lama.Grasshopper;
+using Lama.Gh.Widgets;
+using Lama.Gh;
 using Lama.Core.Materials;
 
-namespace Lama.Grasshopper.Components
+namespace Lama.Gh.Components
 {
     public class MaterialComponent : GH_SwitcherComponent
     {
@@ -371,7 +371,7 @@ namespace Lama.Grasshopper.Components
             DA.SetData(0, material);
         }
 
-        protected override System.Drawing.Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
+        protected override System.Drawing.Bitmap Icon => Lama.Gh.Properties.Resources.Lama_24x24;
 
         public override Guid ComponentGuid
         {

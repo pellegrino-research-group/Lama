@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Types;
-using Lama.Grasshopper.Widgets;
+using Lama.Gh.Widgets;
 using Lama.Core.Model.Loads;
 using Lama.Core.Model.Steps;
 
-namespace Lama.Grasshopper.Components
+namespace Lama.Gh.Components
 {
     public class StaticStepComponent : GH_SwitcherComponent
     {
@@ -224,7 +224,7 @@ namespace Lama.Grasshopper.Components
             return input;
         }
 
-        protected override System.Drawing.Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
+        protected override System.Drawing.Bitmap Icon => Lama.Gh.Properties.Resources.Lama_24x24;
         public override Guid ComponentGuid => new Guid("eb8ef6bc-3fdf-4e9c-af6d-b69f82ef5fcb");
     }
 }

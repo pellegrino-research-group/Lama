@@ -2,7 +2,7 @@
 using Grasshopper.Kernel;
 using System.Collections.Generic;
 
-namespace Lama.Grasshopper.Widgets
+namespace Lama.Gh.Widgets
 {
     public abstract class GH_ExtendableComponent : GH_Component
     {

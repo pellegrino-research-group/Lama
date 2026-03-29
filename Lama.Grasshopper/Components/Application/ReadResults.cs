@@ -7,10 +7,10 @@ using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Types;
 using Lama.Core.Model;
 using Lama.Core.PostProcessing;
-using Lama.Grasshopper.Widgets;
+using Lama.Gh.Widgets;
 using Rhino.Geometry;
 
-namespace Lama.Grasshopper.Components
+namespace Lama.Gh.Components
 {
     public class ReadResultsComponent : GH_SwitcherComponent
     {
@@ -396,7 +396,7 @@ namespace Lama.Grasshopper.Components
             return model.Path + ".dat";
         }
 
-        protected override System.Drawing.Bitmap Icon => Lama.Grasshopper.Properties.Resources.Lama_24x24;
+        protected override System.Drawing.Bitmap Icon => Lama.Gh.Properties.Resources.Lama_24x24;
         public override Guid ComponentGuid => new Guid("f1df9d50-39db-4f00-83ea-04f46f4d8a12");
     }
 }

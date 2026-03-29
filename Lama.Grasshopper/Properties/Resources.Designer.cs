@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace Lama.Grasshopper.Properties
+namespace Lama.Gh.Properties
 {
     // Lightweight strongly-typed resource access for component icons.
     internal static class Resources
